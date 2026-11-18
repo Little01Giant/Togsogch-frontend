@@ -8,7 +8,8 @@
    Ногоон = үндсэн үйлдэл; Шаргал-ногоон = онцлох (идэвхтэй, явц, мэдээлэл); Шар = зөвхөн Premium/амжилт.
    Контрастын тохируулга (WCAG AA): текст/сул тэмдэглэгээнд ашиглах өнгийг fill-ээс тусад нь тодорхойлсон. */
 :root {
-  --font-sans: var(--font-inter), 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+  /* Nunito (бөөрөнхий): @fontsource-variable/nunito-оос локалаар (Латин + Кирилл), build үед сүлжээ шаардахгүй */
+  --font-sans: 'Nunito Variable', 'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
 
   --background: #ffffff;
   --foreground: #3c3c3c;
