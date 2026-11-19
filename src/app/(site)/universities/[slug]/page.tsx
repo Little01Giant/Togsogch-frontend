@@ -1,9 +1,9 @@
 'use client';
 import { MediaCredits } from '@/components/education/media-credits';
-import { use } from 'react';
+import { use, useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink, GraduationCap, Lock, MapPin } from 'lucide-react';
+import { ChevronDown, ExternalLink, GraduationCap, Lock, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
 import { fmtNumber, t } from '@/i18n';
 import { useMe } from '@/lib/auth';
@@ -21,6 +21,22 @@ type Cat = 'tuition' | 'english' | 'procedure';
 const Block = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => <Card className={`p-5 sm:p-6 ${className ?? ''}`}><h2 className="mb-3 text-h4">{title}</h2>{children}</Card>;
 const Missing = () => <p className="italic text-muted-foreground">{S.notAvailable}</p>;
 const Item = ({ children }: { children: React.ReactNode }) => <div className="rounded-md border bg-muted/40 p-3 text-body-sm">{children}</div>;
+
+/** Урт танилцуулгыг 4 мөрөөр таслаад «Дэлгэрэнгүй / Хураах» товчоор нээж хаана. Богино текст бол товчгүй. */
+function ExpandableText({ text }: { text: string }) {
+  const [open, setOpen] = useState(false);
+  const long = text.length > 240;
+  return (
+    <div>
+      <p className={!open && long ? 'line-clamp-4' : undefined}>{text}</p>
+      {long && (
+        <button type="button" onClick={() => setOpen((v) => !v)} aria-expanded={open} className="mt-1 inline-flex items-center gap-1 rounded-sm text-body-sm font-semibold text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring dark:text-secondary">
+          {open ? S.readLess : S.readMore}<ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden />
+        </button>
+      )}
+    </div>
+  );
+}
 
 /** CEFR ↔ IELTS / TOEFL iBT: ielts.org болон ets.org-ийн албан ёсны харьцуулалт (код/оноо тул i18n-д биш) */
 const LEVEL_ROWS = [
@@ -156,9 +172,12 @@ export default function UniversityDetail({ params }: { params: Promise<{ slug: s
                   </div>
                 </div>
                 <h2 className="mb-1 mt-5 text-h4">{S.intro}</h2>
-                <p>{u.description ?? <NoData />}</p>
-                <MediaCredits media={u.media} />
-                <div className="mt-3"><SourceBadge source={u.source} hideStatus /></div>
+                {u.description ? <ExpandableText text={u.description} /> : <p><NoData /></p>}
+                <details className="group mt-3 text-caption">
+                  <summary className="inline-flex cursor-pointer select-none items-center gap-1 text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{S.credits.title}<ChevronDown className="size-3.5 transition-transform group-open:rotate-180" aria-hidden /></summary>
+                  <MediaCredits media={u.media} />
+                  <div className="mt-3"><SourceBadge source={u.source} hideStatus /></div>
+                </details>
                 {!u.access.unlocked && <div className="mt-4 flex justify-end"><Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90"><a href="#unlock"><Lock className="size-4" aria-hidden />{S.openInfo}</a></Button></div>}
               </div>
             </Card>
@@ -182,7 +201,6 @@ export default function UniversityDetail({ params }: { params: Promise<{ slug: s
                         </div>
                       );
                     })}
-                    <p className="text-caption text-muted-foreground">{U.rankingHint} {U.rankingNote}</p>
                   </div>
                 )
                 : <p className="italic text-muted-foreground">{U.rankingNone}</p>}

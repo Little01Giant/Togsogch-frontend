@@ -258,8 +258,7 @@ export const mn = {
     showFilters: 'Шүүлтүүр', hideFilters: 'Шүүлтүүр хаах', noResultsHint: 'Шүүлтүүрээ өөрчлөөд дахин оролдоно уу. Мэдээллийн сан ихэвчлэн Админаар баталгаажсан сургуулиудаар баяжиж байдаг.',
     website: 'Албан ёсны сайт', founded: 'Байгуулагдсан он', rankings: 'Рейтинг', tuitionFees: 'Сургалтын төлбөр ба хураамж', programs: 'Хөтөлбөрүүд', admissionReq: 'Элсэлтийн шаардлага',
     scholarshipsTitle: 'Тэтгэлэг', other: 'Бусад мэдээлэл', dormitory: 'Дотуур байр', support: 'Олон улсын оюутны дэмжлэг', facilities: 'Байгууламж', contact: 'Холбоо барих', map: 'Газрын зураг',
-    rankingNote: 'Өөр өөр байгууллагын рейтингийг нэг дүн болгон нийлүүлээгүй. Рейтинг бүрийн эх сурвалж, он тусдаа харагдана.', rankingNone: 'Рейтингийн мэдээлэл байхгүй.',
-    rankingHint: 'Байр бага тоотой байх тусам өндөр: 1-р байр нь жагсаалтын хамгийн дээд байр.',
+    rankingNone: 'Рейтингийн мэдээлэл байхгүй.',
     rankingPlace: '{n}-р байр', rankingPlaceText: 'Байр: {t}', rankingEdition: '{y} оны хэвлэл', rankingSource: 'Эх сурвалж',
     labelsRankingLong: { QS_WORLD: 'QS — Дэлхийн их сургуулиудын рейтинг', QS_ASIA: 'QS — Азийн их сургуулиудын рейтинг', THE_WORLD: 'Times Higher Education — Дэлхийн рейтинг', THE_ASIA: 'Times Higher Education — Азийн рейтинг', ARWU: 'ARWU — Шанхайн дэлхийн рейтинг' } as Record<string, string>,
     annualFee: 'Жилийн төлбөр', semesterFee: 'Улирлын төлбөр', duration2: 'Хугацаа', months: 'сар', currency: 'Валют', feeType: 'Төрөл', otherFees: 'Бусад хураамж', livingCost: 'Амьдрах зардал (сард)',
@@ -368,7 +367,7 @@ export const mn = {
     },
     uni: {
       free: 'Үнэгүй мэдээлэл', paid: 'Төлбөртэй мэдээлэл', locked: 'Түгжээтэй', unlocked: 'Нээгдсэн', location: 'Байршил', intro: 'Танилцуулга',
-      gallery: 'Зураг', credits: { photo: 'Зураг', logo: 'Лого', text: 'Танилцуулга', commons: 'Викимедиа Коммонс', wikipedia: 'Википедиа', officialSite: 'Албан ёсны сайт', aiTranslated: 'AI-аар орчуулсан' }, perMonth: '/ сар', livingCost: 'Тухайн улсын сарын амьдрах өртөг', livingNone: 'Мэдээлэл байхгүй',
+      gallery: 'Зураг', credits: { title: 'Эх сурвалж, лиценз', photo: 'Зураг', logo: 'Лого', text: 'Танилцуулга', commons: 'Викимедиа Коммонс', wikipedia: 'Википедиа', officialSite: 'Албан ёсны сайт', aiTranslated: 'AI-аар орчуулсан' }, perMonth: '/ сар', livingCost: 'Тухайн улсын сарын амьдрах өртөг', livingNone: 'Мэдээлэл байхгүй',
       estTitle: 'Тухайн улсын сургалтын төлбөр — ойролцоогоор (бакалавр)', estBadge: 'Ойролцоогоор', estPerYear: '/ жил', estSchools: 'сургуулийн хуудаснаас', estTypical: 'Улсын ердийн төлбөр (дунд утга)', estRange: 'Хамгийн бага ба хамгийн их төлбөрийн хүрээ', estOfficial: 'Албан ёсны улсын мэдээллээс', estMin: 'Доод', estMedian: 'Дундаж', estMax: 'Дээд',
       estNote: 'Энэ нь энэ сургуулийн төлбөр БИШ — тухайн улсын сургуулиудын албан ёсны хуудаснаас цуглуулсан ойролцоо хүрээ. Хөтөлбөр, жилээс хамаарч өөр байна. Албан ёсны хуудаснаар заавал шалгана уу.',
       cat: { tuition: 'Сургалтын төлбөр', english: 'Хэлний шаардлага', procedure: 'Элсэлтийн явц, албан ёсны өргөдлийн холбоос' },
@@ -376,6 +375,7 @@ export const mn = {
       lockedTitle: 'Төлбөртэй мэдээллийг нээх', lockedText: 'Дараах 3 ангиллын дэлгэрэнгүй мэдээлэл нь төлбөр хийснээр үүрд нээгдэнэ. Нэг сургуулийг, эсвэл тухайн улсын бүх сургуулийг нэг дор нээж болно.',
       openInfo: 'Мэдээлэл нээх', unlockCountrySuffix: 'улсын бүх сургуулийг нээх', countryHintTotal: 'Нийт', countryHintUnits: 'сургууль байна', uniHint: 'Зөвхөн энэ сургуулийн бүх мэдээлэл нээгдэнэ',
       loginToUnlock: 'Нээхийн тулд нэвтэрнэ үү', opened: 'Нээгдсэн', englishMin: 'Хамгийн бага оноо', note: 'Тэмдэглэл', applyLink: 'Албан ёсны өргөдлийн холбоос',
+      readMore: 'Дэлгэрэнгүй', readLess: 'Хураах',
       rulesTitle: 'Тухайн улсын дүрэм, журам',
       levelGuide: {
         title: 'Хэлний түвшний тайлбар',
