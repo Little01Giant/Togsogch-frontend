@@ -27,7 +27,7 @@ const Item = ({ children }: { children: React.ReactNode }) => <div className="ro
 function PaidContent({ paid }: { paid: any }) {
   /** Мэдээлэлгүй ангиллыг харуулахгүй (хоосон картууд хэрэглэгчид хэрэггүй); бүгд хоосон бол нэг л мэдэгдэл. */
   const sec = (k: Cat, body: React.ReactNode, has: boolean) => (has ? <Block key={k} title={S.cat[k]}>{body}</Block> : null);
-  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.exams.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
+  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.languageRules.length > 0 || paid.exams.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
   return (
     <div className="grid gap-4" data-testid="paid-content">
       {!hasAny && <Block title={S.paid}><Missing /></Block>}
@@ -38,7 +38,17 @@ function PaidContent({ paid }: { paid: any }) {
           {x.otherFees && <p className="mt-2 text-body-sm"><span className="text-muted-foreground">{U.otherFees}: </span>{x.otherFees}</p>}
           {x.sourceUrl && <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-caption text-primary underline dark:text-secondary">{t.source.label}</a>}
         </div>))}</div>, paid.tuition.length > 0)}
-      {sec('english', <div className="grid gap-2 sm:grid-cols-2">{paid.english.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>, paid.english.length > 0)}
+      {sec('english', (
+        <div className="grid gap-4">
+          {paid.english.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{paid.english.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>}
+          {paid.languageRules.length > 0 && (
+            <div>
+              <p className="mb-1 text-label">{S.rulesTitle}</p>
+              <ul className="grid gap-2">{paid.languageRules.map((r: any, i: number) => <li key={i}><Item><p>{r.text}</p>{r.sourceUrl && <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-caption text-primary underline dark:text-secondary">{r.sourceName ?? t.source.label}{r.verifiedAt ? ` · ${r.verifiedAt}` : ''}</a>}</Item></li>)}</ul>
+            </div>
+          )}
+        </div>
+      ), paid.english.length > 0 || paid.languageRules.length > 0)}
       {sec('exams', <div className="grid gap-2 sm:grid-cols-2">{paid.exams.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>, paid.exams.length > 0)}
       {sec('procedure', (
         <div className="grid gap-4">

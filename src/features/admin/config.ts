@@ -37,6 +37,9 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { name: 'universityCount', label: 'Их сургуулийн тоо', type: 'number' }, { name: 'bachelorDuration', label: t.countries.bachelor, type: 'text' }, { name: 'masterDuration', label: t.countries.master, type: 'text' },
       { name: 'languagePrepInfo', label: t.countries.languagePrep, type: 'textarea' }, { name: 'admissionGeneral', label: t.countries.admission, type: 'textarea' },
       { name: 'commonExams', label: t.countries.exams, type: 'tags', hint: 'IELTS, TOEFL…' }, { name: 'tuitionRange', label: t.countries.tuition, type: 'text' },
+      { name: 'admissionRules', label: 'Улсын хэлний шаардлага, хууль журам (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
+        { name: 'text', label: 'Дүрэм (Монгол хэлээр)', type: 'textarea', required: true }, { name: 'sourceName', label: 'Эх сурвалжийн нэр', type: 'text' }, { name: 'sourceUrl', label: 'Эх сурвалжийн URL (https://…)', type: 'text' }, { name: 'verifiedAt', label: 'Баталгаажуулсан огноо', type: 'text' },
+      ] },
       { name: 'livingCostMonthlyUsd.min', label: 'Амьдрах зардал сард, доод (USD)', type: 'number' }, { name: 'livingCostMonthlyUsd.max', label: 'Амьдрах зардал сард, дээд (USD)', type: 'number' },
       { name: 'scholarshipInfo', label: t.countries.scholarships, type: 'textarea' },
       { name: 'matchProfile', label: 'Тохирлын профайл (редакцийн JSON: languages[en,ko,ja,zh,de,fr,ru], climate cold|temperate|warm, cityLife big_city|balanced|quiet, costTier 1-3, safety 1-5, distance near|mid|far, culture near|mid|far, higherEd 1-3, workAbroad 1-3)', type: 'json' },
@@ -74,8 +77,8 @@ export const RESOURCES: Record<string, ResourceConfig> = {
         { name: 'coverage', label: U.coverage, type: 'text' }, { name: 'eligibility', label: U.eligibility, type: 'text' }, { name: 'deadline', label: U.deadline, type: 'text' }, { name: 'url', label: U.applyLink, type: 'text' },
       ] },
       { name: 'featured', label: 'Нүүр хуудсанд онцлох', type: 'checkbox' },
-      { name: 'admission.englishTests', label: 'Англи хэлний шаардлага (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
-        { name: 'test', label: 'Шалгалт (IELTS, TOEFL…)', type: 'text', required: true }, { name: 'minScore', label: 'Хамгийн бага оноо', type: 'text' }, { name: 'note', label: 'Тэмдэглэл', type: 'text' },
+      { name: 'admission.englishTests', label: 'Хэлний шаардлага (англи болон орон нутгийн хэл) (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
+        { name: 'test', label: 'Шалгалт (IELTS, TOEFL, TestDaF, TOPIK, JLPT…)', type: 'text', required: true }, { name: 'minScore', label: 'Хамгийн бага оноо/түвшин', type: 'text' }, { name: 'note', label: 'Тэмдэглэл', type: 'text' },
       ] },
       { name: 'admission.standardizedTests', label: 'Стандарт шалгалтын шаардлага (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
         { name: 'test', label: 'Шалгалт (SAT, GRE…)', type: 'text', required: true }, { name: 'minScore', label: 'Хамгийн бага оноо', type: 'text' }, { name: 'note', label: 'Тэмдэглэл', type: 'text' },
