@@ -17,17 +17,45 @@ import { UnlockButton, useProducts } from '@/features/paywall';
 
 const U = t.universities;
 const S = t.s.uni;
-type Cat = 'tuition' | 'english' | 'exams' | 'procedure';
+type Cat = 'tuition' | 'english' | 'procedure';
 
 const Block = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => <Card className={`p-5 sm:p-6 ${className ?? ''}`}><h2 className="mb-3 text-h4">{title}</h2>{children}</Card>;
 const Missing = () => <p className="italic text-muted-foreground">{S.notAvailable}</p>;
 const Item = ({ children }: { children: React.ReactNode }) => <div className="rounded-md border bg-muted/40 p-3 text-body-sm">{children}</div>;
 
+/** CEFR ↔ IELTS / TOEFL iBT: ielts.org болон ets.org-ийн албан ёсны харьцуулалт (код/оноо тул i18n-д биш) */
+const LEVEL_ROWS = [
+  { level: 'B1', ielts: '4.0–5.0', toefl: '42–71', toeflNew: '–' },
+  { level: 'B2', ielts: '5.5–6.5', toefl: '72–94', toeflNew: '4–4.5' },
+  { level: 'C1', ielts: '7.0–8.0', toefl: '95–113', toeflNew: '5–5.5' },
+];
+
+/** Хэлний түвшний тайлбар: албан ёсны IELTS болон ETS (TOEFL)-ийн CEFR харьцуулалт. */
+function LevelGuide() {
+  const G = S.levelGuide;
+  return (
+    <details className="group rounded-md border bg-muted/20 p-3 text-body-sm">
+      <summary className="cursor-pointer select-none font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{G.title}</summary>
+      <div className="mt-3 grid gap-3">
+        <p className="text-muted-foreground">{G.intro}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] border-collapse text-left">
+            <thead><tr className="border-b text-muted-foreground"><th className="py-1.5 pr-3 font-medium">{G.colLevel}</th><th className="py-1.5 pr-3 font-medium">{G.colIelts}</th><th className="py-1.5 pr-3 font-medium">{G.colToefl}</th><th className="py-1.5 font-medium">{G.colToeflNew}</th></tr></thead>
+            <tbody>{LEVEL_ROWS.map((r) => <tr key={r.level} className="border-b last:border-0"><td className="py-1.5 pr-3 font-semibold">{r.level}</td><td className="py-1.5 pr-3">{r.ielts}</td><td className="py-1.5 pr-3">{r.toefl}</td><td className="py-1.5">{r.toeflNew}</td></tr>)}</tbody>
+          </table>
+        </div>
+        <p className="text-muted-foreground">{G.note}</p>
+        <p className="text-caption">{G.sources}: <a href="https://ielts.org/news-and-insights/everything-you-need-to-know-about-ielts-and-the-cefr" target="_blank" rel="noopener noreferrer" className="text-primary underline dark:text-secondary">IELTS</a> · <a href="https://www.ets.org/toefl/institutions/ibt/score-scale-update.html" target="_blank" rel="noopener noreferrer" className="text-primary underline dark:text-secondary">ETS TOEFL</a></p>
+      </div>
+    </details>
+  );
+}
+
 /** Төлбөртэй хэсэг: ЗӨВХӨН backend-ийн `paid` payload-оос зурагдана (нээгдээгүй бол энэ өгөгдөл хариунд байхгүй). */
 function PaidContent({ paid }: { paid: any }) {
   /** Мэдээлэлгүй ангиллыг харуулахгүй (хоосон картууд хэрэглэгчид хэрэггүй); бүгд хоосон бол нэг л мэдэгдэл. */
   const sec = (k: Cat, body: React.ReactNode, has: boolean) => (has ? <Block key={k} title={S.cat[k]}>{body}</Block> : null);
-  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.languageRules.length > 0 || paid.exams.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
+  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.languageRules.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
   return (
     <div className="grid gap-4" data-testid="paid-content">
       {!hasAny && <Block title={S.paid}><Missing /></Block>}
@@ -41,6 +69,7 @@ function PaidContent({ paid }: { paid: any }) {
       {sec('english', (
         <div className="grid gap-4">
           {paid.english.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{paid.english.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>}
+          {paid.english.length > 0 && <LevelGuide />}
           {paid.languageRules.length > 0 && (
             <div>
               <p className="mb-1 text-label">{S.rulesTitle}</p>
@@ -49,7 +78,6 @@ function PaidContent({ paid }: { paid: any }) {
           )}
         </div>
       ), paid.english.length > 0 || paid.languageRules.length > 0)}
-      {sec('exams', <div className="grid gap-2 sm:grid-cols-2">{paid.exams.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>, paid.exams.length > 0)}
       {sec('procedure', (
         <div className="grid gap-4">
           {paid.procedure.steps.length > 0 && <div><p className="mb-1 text-label">{S.procedureTitle}</p><ol className="list-decimal space-y-1 pl-5 text-body-sm">{paid.procedure.steps.map((s: string, i: number) => <li key={i}>{s}</li>)}</ol></div>}
