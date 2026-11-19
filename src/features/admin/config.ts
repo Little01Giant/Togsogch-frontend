@@ -80,11 +80,6 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { name: 'admission.standardizedTests', label: 'Стандарт шалгалтын шаардлага (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
         { name: 'test', label: 'Шалгалт (SAT, GRE…)', type: 'text', required: true }, { name: 'minScore', label: 'Хамгийн бага оноо', type: 'text' }, { name: 'note', label: 'Тэмдэглэл', type: 'text' },
       ] },
-      { name: 'admission.requirements', label: 'Элсэлтийн шаардлага (ТӨЛБӨРТЭЙ)', type: 'tags' },
-      { name: 'admission.documents', label: 'Шаардлагатай бичиг баримт (ТӨЛБӨРТЭЙ)', type: 'tags' },
-      { name: 'admission.deadlines', label: 'Өргөдлийн хугацаа (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
-        { name: 'label', label: 'Нэр (жнь Намрын элсэлт)', type: 'text', required: true }, { name: 'date', label: 'Огноо (YYYY-MM-DD)', type: 'text' }, { name: 'note', label: 'Тэмдэглэл', type: 'text' },
-      ] },
       { name: 'admission.procedure', label: 'Элсэлтийн явц, алхмууд (ТӨЛБӨРТЭЙ)', type: 'tags' },
       { name: 'admission.applicationLinks', label: 'Албан ёсны өргөдлийн холбоос (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
         { name: 'title', label: 'Нэр', type: 'text', required: true }, { name: 'url', label: 'URL (https://…)', type: 'text', required: true },

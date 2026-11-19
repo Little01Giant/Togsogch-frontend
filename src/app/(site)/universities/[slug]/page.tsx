@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { CheckCircle2, ExternalLink, GraduationCap, Lock, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
-import { fmtDate, fmtNumber, t } from '@/i18n';
+import { fmtNumber, t } from '@/i18n';
 import { useMe } from '@/lib/auth';
 import { Flag, NoData, SourceBadge, StateBoundary } from '@/components/common';
 import { PageContainer } from '@/components/layout/page-container';
@@ -17,19 +17,17 @@ import { UnlockButton, useProducts } from '@/features/paywall';
 
 const U = t.universities;
 const S = t.s.uni;
-type Cat = 'tuition' | 'english' | 'exams' | 'requirements' | 'documents' | 'deadlines' | 'procedure';
+type Cat = 'tuition' | 'english' | 'exams' | 'procedure';
 
 const Block = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => <Card className={`p-5 sm:p-6 ${className ?? ''}`}><h2 className="mb-3 text-h4">{title}</h2>{children}</Card>;
 const Missing = () => <p className="italic text-muted-foreground">{S.notAvailable}</p>;
-const List = ({ items }: { items: string[] }) => <ul className="list-disc space-y-1 pl-5 text-body-sm">{items.map((x, i) => <li key={i}>{x}</li>)}</ul>;
 const Item = ({ children }: { children: React.ReactNode }) => <div className="rounded-md border bg-muted/40 p-3 text-body-sm">{children}</div>;
 
 /** Төлбөртэй хэсэг: ЗӨВХӨН backend-ийн `paid` payload-оос зурагдана (нээгдээгүй бол энэ өгөгдөл хариунд байхгүй). */
 function PaidContent({ paid }: { paid: any }) {
   /** Мэдээлэлгүй ангиллыг харуулахгүй (хоосон картууд хэрэглэгчид хэрэггүй); бүгд хоосон бол нэг л мэдэгдэл. */
   const sec = (k: Cat, body: React.ReactNode, has: boolean) => (has ? <Block key={k} title={S.cat[k]}>{body}</Block> : null);
-  const reqs = paid.requirements ?? { general: [], programs: [] };
-  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.exams.length > 0 || reqs.general.length > 0 || reqs.programs.length > 0 || paid.documents.length > 0 || paid.deadlines.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
+  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.exams.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
   return (
     <div className="grid gap-4" data-testid="paid-content">
       {!hasAny && <Block title={S.paid}><Missing /></Block>}
@@ -42,9 +40,6 @@ function PaidContent({ paid }: { paid: any }) {
         </div>))}</div>, paid.tuition.length > 0)}
       {sec('english', <div className="grid gap-2 sm:grid-cols-2">{paid.english.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>, paid.english.length > 0)}
       {sec('exams', <div className="grid gap-2 sm:grid-cols-2">{paid.exams.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>, paid.exams.length > 0)}
-      {sec('requirements', <div className="grid gap-3">{reqs.general.length > 0 && <List items={reqs.general} />}{reqs.programs.map((p: any, i: number) => <Item key={i}><p className="mb-1 font-semibold">{p.name}</p><ul className="list-disc pl-5">{p.requirements.map((r: any, j: number) => <li key={j}>{r.kind}{r.minScore != null ? ` ≥ ${r.minScore}` : ''}{r.note ? ` — ${r.note}` : ''}</li>)}</ul></Item>)}</div>, reqs.general.length > 0 || reqs.programs.length > 0)}
-      {sec('documents', <List items={paid.documents} />, paid.documents.length > 0)}
-      {sec('deadlines', <div className="grid gap-2 sm:grid-cols-2">{paid.deadlines.map((d: any, i: number) => <Item key={i}><b>{d.label}</b>: {/^\d{4}-\d{2}-\d{2}/.test(String(d.date)) ? fmtDate(d.date) : d.date}{d.note && <p className="text-muted-foreground">{d.note}</p>}</Item>)}</div>, paid.deadlines.length > 0)}
       {sec('procedure', (
         <div className="grid gap-4">
           {paid.procedure.steps.length > 0 && <div><p className="mb-1 text-label">{S.procedureTitle}</p><ol className="list-decimal space-y-1 pl-5 text-body-sm">{paid.procedure.steps.map((s: string, i: number) => <li key={i}>{s}</li>)}</ol></div>}
