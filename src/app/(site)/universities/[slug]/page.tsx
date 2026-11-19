@@ -1,4 +1,5 @@
 'use client';
+import { MediaCredits } from '@/components/education/media-credits';
 import { use } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
@@ -124,6 +125,7 @@ export default function UniversityDetail({ params }: { params: Promise<{ slug: s
                 </div>
                 <h2 className="mb-1 mt-5 text-h4">{S.intro}</h2>
                 <p>{u.description ?? <NoData />}</p>
+                <MediaCredits media={u.media} />
                 <div className="mt-3"><SourceBadge source={u.source} hideStatus /></div>
                 {!u.access.unlocked && <div className="mt-4 flex justify-end"><Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90"><a href="#unlock"><Lock className="size-4" aria-hidden />{S.openInfo}</a></Button></div>}
               </div>
