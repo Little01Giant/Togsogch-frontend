@@ -3,33 +3,58 @@ import { MediaCredits } from '@/components/education/media-credits';
 import { use } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle2, ExternalLink, GraduationCap, Lock, MapPin } from 'lucide-react';
+import { ExternalLink, GraduationCap, Lock, MapPin } from 'lucide-react';
 import { api } from '@/lib/api';
-import { fmtDate, fmtNumber, t } from '@/i18n';
+import { fmtNumber, t } from '@/i18n';
 import { useMe } from '@/lib/auth';
 import { Flag, NoData, SourceBadge, StateBoundary } from '@/components/common';
 import { PageContainer } from '@/components/layout/page-container';
-import { Alert, Badge, Card } from '@/components/ui/data-display';
+import { Badge, Card } from '@/components/ui/data-display';
 import { Button } from '@/components/ui/button';
 import { TuitionDisplay } from '@/components/education/tuition-display';
-import { RankingBadge } from '@/components/education/ranking-badge';
 import { UnlockButton, useProducts } from '@/features/paywall';
 
 const U = t.universities;
 const S = t.s.uni;
-type Cat = 'tuition' | 'english' | 'exams' | 'requirements' | 'documents' | 'deadlines' | 'procedure';
+type Cat = 'tuition' | 'english' | 'procedure';
 
 const Block = ({ title, children, className }: { title: string; children: React.ReactNode; className?: string }) => <Card className={`p-5 sm:p-6 ${className ?? ''}`}><h2 className="mb-3 text-h4">{title}</h2>{children}</Card>;
 const Missing = () => <p className="italic text-muted-foreground">{S.notAvailable}</p>;
-const List = ({ items }: { items: string[] }) => <ul className="list-disc space-y-1 pl-5 text-body-sm">{items.map((x, i) => <li key={i}>{x}</li>)}</ul>;
 const Item = ({ children }: { children: React.ReactNode }) => <div className="rounded-md border bg-muted/40 p-3 text-body-sm">{children}</div>;
+
+/** CEFR ↔ IELTS / TOEFL iBT: ielts.org болон ets.org-ийн албан ёсны харьцуулалт (код/оноо тул i18n-д биш) */
+const LEVEL_ROWS = [
+  { level: 'B1', ielts: '4.0–5.0', toefl: '42–71', toeflNew: '–' },
+  { level: 'B2', ielts: '5.5–6.5', toefl: '72–94', toeflNew: '4–4.5' },
+  { level: 'C1', ielts: '7.0–8.0', toefl: '95–113', toeflNew: '5–5.5' },
+];
+
+/** Хэлний түвшний тайлбар: албан ёсны IELTS болон ETS (TOEFL)-ийн CEFR харьцуулалт. */
+function LevelGuide() {
+  const G = S.levelGuide;
+  return (
+    <details className="group rounded-md border bg-muted/20 p-3 text-body-sm">
+      <summary className="cursor-pointer select-none font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{G.title}</summary>
+      <div className="mt-3 grid gap-3">
+        <p className="text-muted-foreground">{G.intro}</p>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[420px] border-collapse text-left">
+            <thead><tr className="border-b text-muted-foreground"><th className="py-1.5 pr-3 font-medium">{G.colLevel}</th><th className="py-1.5 pr-3 font-medium">{G.colIelts}</th><th className="py-1.5 pr-3 font-medium">{G.colToefl}</th><th className="py-1.5 font-medium">{G.colToeflNew}</th></tr></thead>
+            <tbody>{LEVEL_ROWS.map((r) => <tr key={r.level} className="border-b last:border-0"><td className="py-1.5 pr-3 font-semibold">{r.level}</td><td className="py-1.5 pr-3">{r.ielts}</td><td className="py-1.5 pr-3">{r.toefl}</td><td className="py-1.5">{r.toeflNew}</td></tr>)}</tbody>
+          </table>
+        </div>
+        <p className="text-muted-foreground">{G.note}</p>
+        <p className="text-caption">{G.sources}: <a href="https://ielts.org/news-and-insights/everything-you-need-to-know-about-ielts-and-the-cefr" target="_blank" rel="noopener noreferrer" className="text-primary underline dark:text-secondary">IELTS</a> · <a href="https://www.ets.org/toefl/institutions/ibt/score-scale-update.html" target="_blank" rel="noopener noreferrer" className="text-primary underline dark:text-secondary">ETS TOEFL</a></p>
+      </div>
+    </details>
+  );
+}
 
 /** Төлбөртэй хэсэг: ЗӨВХӨН backend-ийн `paid` payload-оос зурагдана (нээгдээгүй бол энэ өгөгдөл хариунд байхгүй). */
 function PaidContent({ paid }: { paid: any }) {
   /** Мэдээлэлгүй ангиллыг харуулахгүй (хоосон картууд хэрэглэгчид хэрэггүй); бүгд хоосон бол нэг л мэдэгдэл. */
-  const sec = (k: Cat, body: React.ReactNode, has: boolean) => (has ? <Block key={k} title={S.cat[k]}>{body}</Block> : null);
-  const reqs = paid.requirements ?? { general: [], programs: [] };
-  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.exams.length > 0 || reqs.general.length > 0 || reqs.programs.length > 0 || paid.documents.length > 0 || paid.deadlines.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
+  const sec = (k: Cat, body: React.ReactNode, has: boolean) => (has ? <Block key={k} title={S.cat[k]} className="border-primary shadow-[0_2px_0_0_var(--primary)]">{body}</Block> : null);
+  const hasAny = paid.tuition.length > 0 || paid.english.length > 0 || paid.languageRules.length > 0 || paid.procedure.steps.length > 0 || paid.procedure.links.length > 0;
   return (
     <div className="grid gap-4" data-testid="paid-content">
       {!hasAny && <Block title={S.paid}><Missing /></Block>}
@@ -40,11 +65,18 @@ function PaidContent({ paid }: { paid: any }) {
           {x.otherFees && <p className="mt-2 text-body-sm"><span className="text-muted-foreground">{U.otherFees}: </span>{x.otherFees}</p>}
           {x.sourceUrl && <a href={x.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-caption text-primary underline dark:text-secondary">{t.source.label}</a>}
         </div>))}</div>, paid.tuition.length > 0)}
-      {sec('english', <div className="grid gap-2 sm:grid-cols-2">{paid.english.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>, paid.english.length > 0)}
-      {sec('exams', <div className="grid gap-2 sm:grid-cols-2">{paid.exams.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>, paid.exams.length > 0)}
-      {sec('requirements', <div className="grid gap-3">{reqs.general.length > 0 && <List items={reqs.general} />}{reqs.programs.map((p: any, i: number) => <Item key={i}><p className="mb-1 font-semibold">{p.name}</p><ul className="list-disc pl-5">{p.requirements.map((r: any, j: number) => <li key={j}>{r.kind}{r.minScore != null ? ` ≥ ${r.minScore}` : ''}{r.note ? ` — ${r.note}` : ''}</li>)}</ul></Item>)}</div>, reqs.general.length > 0 || reqs.programs.length > 0)}
-      {sec('documents', <List items={paid.documents} />, paid.documents.length > 0)}
-      {sec('deadlines', <div className="grid gap-2 sm:grid-cols-2">{paid.deadlines.map((d: any, i: number) => <Item key={i}><b>{d.label}</b>: {/^\d{4}-\d{2}-\d{2}/.test(String(d.date)) ? fmtDate(d.date) : d.date}{d.note && <p className="text-muted-foreground">{d.note}</p>}</Item>)}</div>, paid.deadlines.length > 0)}
+      {sec('english', (
+        <div className="grid gap-4">
+          {paid.english.length > 0 && <div className="grid gap-2 sm:grid-cols-2">{paid.english.map((x: any, i: number) => <Item key={i}><b>{x.test}</b>{x.minScore && <> · {S.englishMin}: <b>{x.minScore}</b></>}{x.note && <p className="text-muted-foreground">{x.note}</p>}</Item>)}</div>}
+          {paid.english.length > 0 && <LevelGuide />}
+          {paid.languageRules.length > 0 && (
+            <div>
+              <p className="mb-1 text-label">{S.rulesTitle}</p>
+              <ul className="grid gap-2">{paid.languageRules.map((r: any, i: number) => <li key={i}><Item><p>{r.text}</p>{r.sourceUrl && <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-block text-caption text-primary underline dark:text-secondary">{r.sourceName ?? t.source.label}{r.verifiedAt ? ` · ${r.verifiedAt}` : ''}</a>}</Item></li>)}</ul>
+            </div>
+          )}
+        </div>
+      ), paid.english.length > 0 || paid.languageRules.length > 0)}
       {sec('procedure', (
         <div className="grid gap-4">
           {paid.procedure.steps.length > 0 && <div><p className="mb-1 text-label">{S.procedureTitle}</p><ol className="list-decimal space-y-1 pl-5 text-body-sm">{paid.procedure.steps.map((s: string, i: number) => <li key={i}>{s}</li>)}</ol></div>}
@@ -114,8 +146,8 @@ export default function UniversityDetail({ params }: { params: Promise<{ slug: s
               {u.images?.[0] && <img src={u.images[0]} alt="" className="h-48 w-full object-cover sm:h-64" />}
               <div className="p-5 sm:p-6">
                 <div className="flex min-w-0 items-start gap-4">
-                  <div className="grid size-[72px] shrink-0 place-items-center overflow-hidden rounded-lg border bg-muted">
-                    {u.logoUrl ? <img src={u.logoUrl} alt="" width={72} height={72} className="size-full object-contain" /> : <GraduationCap className="size-8 text-muted-foreground" aria-hidden />}
+                  <div className={`grid size-20 shrink-0 place-items-center overflow-hidden rounded-xl border ${u.logoUrl ? 'bg-logo-surface' : 'bg-muted'}`}>
+                    {u.logoUrl ? <img src={u.logoUrl} alt="" width={80} height={80} className="size-full object-contain p-1.5" /> : <GraduationCap className="size-8 text-muted-foreground" aria-hidden />}
                   </div>
                   <div className="min-w-0">
                     <h1 className="text-base font-semibold leading-snug [overflow-wrap:anywhere]">{u.name}</h1>{u.nameMn && <p className="text-sm text-muted-foreground">{u.nameMn}</p>}
@@ -135,7 +167,24 @@ export default function UniversityDetail({ params }: { params: Promise<{ slug: s
 
             <Block title={U.rankings} className="min-w-0">
               {ranks.length
-                ? <div className="grid gap-2" data-testid="uni-rankings">{ranks.map((r: any) => <RankingBadge key={`${r.provider}-${r.year}`} label={U.labelsRanking[r.provider] ?? r.provider} ranking={r} showSource className="[&>span:first-child]:w-20" />)}<p className="text-caption text-muted-foreground">{U.rankingNote}</p></div>
+                ? (
+                  <div className="grid gap-3" data-testid="uni-rankings">
+                    {ranks.map((r: any) => {
+                      const place = r.rank ? U.rankingPlace.replace('{n}', String(r.rank)) : r.rankText ? U.rankingPlaceText.replace('{t}', String(r.rankText)) : null;
+                      return (
+                        <div key={`${r.provider}-${r.year}`} className="flex items-center gap-4 rounded-md border bg-muted/40 p-3">
+                          <div className="grid min-w-16 shrink-0 place-items-center rounded-lg bg-primary/10 px-3 py-2 text-primary dark:text-secondary"><span className="text-h3 font-bold leading-none">#{r.rank ?? r.rankText}</span></div>
+                          <div className="min-w-0">
+                            <p className="font-semibold [overflow-wrap:anywhere]">{U.labelsRankingLong[r.provider] ?? U.labelsRanking[r.provider] ?? r.provider}</p>
+                            <p className="text-body-sm text-muted-foreground">{[place, U.rankingEdition.replace('{y}', String(r.year))].filter(Boolean).join(' · ')}</p>
+                            {r.sourceUrl && <a href={r.sourceUrl} target="_blank" rel="noopener noreferrer" className="mt-0.5 inline-block text-caption text-primary underline dark:text-secondary">{U.rankingSource} ↗</a>}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <p className="text-caption text-muted-foreground">{U.rankingHint} {U.rankingNote}</p>
+                  </div>
+                )
                 : <p className="italic text-muted-foreground">{U.rankingNone}</p>}
             </Block>
 
@@ -144,9 +193,15 @@ export default function UniversityDetail({ params }: { params: Promise<{ slug: s
                 <div className="grid gap-3" data-testid="tuition-estimate">
                   {u.country.tuitionEstimate.items.map((it: any) => (
                     <div key={it.currency} className="rounded-md border bg-muted/40 p-4">
-                      <div className="mb-2 flex flex-wrap items-center gap-2"><Badge variant="warning">{S.estBadge}</Badge><span className="text-caption text-muted-foreground">{it.n != null ? `${fmtNumber(it.n)} ${S.estSchools}` : S.estOfficial} · {it.currency} {S.estPerYear}</span></div>
-                      <dl className="grid grid-cols-3 gap-2 text-center">
-                        {([['estMin', it.min], ['estMedian', it.median], ['estMax', it.max]] as const).map(([k, v]) => <div key={k} className="min-w-0"><dt className="text-caption text-muted-foreground">{S[k]}</dt><dd className="text-body-sm font-semibold [overflow-wrap:anywhere]">{fmtNumber(v)}</dd></div>)}
+                      <div className="mb-3 flex flex-wrap items-center gap-2"><Badge variant="warning">{S.estBadge}</Badge><span className="text-caption text-muted-foreground">{it.n != null ? `${fmtNumber(it.n)} ${S.estSchools}` : S.estOfficial}</span></div>
+                      <p className="text-caption text-muted-foreground">{S.estTypical}</p>
+                      <p className="mb-3 text-h3 font-bold [overflow-wrap:anywhere]">≈ {fmtNumber(it.median)} {it.currency} <span className="text-body-sm font-normal text-muted-foreground">{S.estPerYear}</span></p>
+                      <div className="relative h-2 rounded-full bg-muted" role="img" aria-label={S.estRange}>
+                        <div className="absolute inset-y-0 left-0 right-0 rounded-full bg-primary/30" />
+                        <div className="absolute top-1/2 size-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-card bg-primary" style={{ left: `${it.max > it.min ? Math.min(100, Math.max(0, ((it.median - it.min) / (it.max - it.min)) * 100)) : 50}%` }} />
+                      </div>
+                      <dl className="mt-2 grid grid-cols-3 gap-2 text-center">
+                        {([['estMin', it.min, 'text-left'], ['estMedian', it.median, 'text-center'], ['estMax', it.max, 'text-right']] as const).map(([k, v, al]) => <div key={k} className={`min-w-0 ${al}`}><dt className="text-caption text-muted-foreground">{S[k]}</dt><dd className="text-body-sm font-semibold [overflow-wrap:anywhere]">{fmtNumber(v)}</dd></div>)}
                       </dl>
                     </div>
                   ))}
@@ -162,7 +217,7 @@ export default function UniversityDetail({ params }: { params: Promise<{ slug: s
             </Block>
 
             {u.access.unlocked
-              ? <><Alert variant="success" title={S.opened}><span className="flex items-center gap-2"><CheckCircle2 className="size-4" aria-hidden />{S.paid}</span></Alert><PaidContent paid={u.paid} /></>
+              ? <PaidContent paid={u.paid} />
               : <LockedPanel uni={u} access={u.access} me={me} />}
           </div>
         )}

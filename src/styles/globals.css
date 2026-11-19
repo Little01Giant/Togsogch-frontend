@@ -14,6 +14,7 @@
   --background: #ffffff;
   --foreground: #3c3c3c;
   --card: #ffffff;
+  --logo-surface: #ffffff; /* сургуулийн лого үргэлж цайвар дэвсгэр дээр (харанхуй горимд ч) уншигдана */
   --card-foreground: #3c3c3c;
   --popover: #ffffff;
   --popover-foreground: #3c3c3c;
@@ -70,6 +71,7 @@
   --background: #131f24;
   --foreground: #f1f7fb;
   --card: #1f2e35;
+  --logo-surface: #ffffff;
   --card-foreground: #f1f7fb;
   --popover: #1f2e35;
   --popover-foreground: #f1f7fb;
@@ -107,7 +109,7 @@
 @theme inline {
   --font-sans: var(--font-sans);
   --color-background: var(--background); --color-foreground: var(--foreground);
-  --color-card: var(--card); --color-card-foreground: var(--card-foreground);
+  --color-logo-surface: var(--logo-surface); --color-card: var(--card);--color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover); --color-popover-foreground: var(--popover-foreground);
   --color-primary: var(--primary); --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary); --color-secondary-foreground: var(--secondary-foreground);

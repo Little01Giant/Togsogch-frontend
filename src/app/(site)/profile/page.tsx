@@ -134,7 +134,7 @@ function ProfileInner({ me }: { me: Me }) {
               ))}
               {unlockedUnis?.map((u) => (
                 <li key={u.slug} className="min-w-0"><Link href={previewUnis ? '/universities' : `/universities/${u.slug}`} className="flex min-w-0 items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted">
-                  <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-md border bg-muted">{u.logoUrl ? <img src={u.logoUrl} alt="" width={40} height={40} className="size-full object-contain" /> : <GraduationCap className="size-4 text-muted-foreground" aria-hidden />}</span>
+                  <span className={`grid size-10 shrink-0 place-items-center overflow-hidden rounded-md border ${u.logoUrl ? 'bg-logo-surface' : 'bg-muted'}`}>{u.logoUrl ? <img src={u.logoUrl} alt="" width={40} height={40} className="size-full object-contain p-0.5" /> : <GraduationCap className="size-4 text-muted-foreground" aria-hidden />}</span>
                   <span className="min-w-0"><span className="block truncate font-medium">{u.name}</span><span className="flex items-center gap-1.5 text-caption text-muted-foreground"><Flag code={u.country?.code} size={14} />{u.country?.nameMn}{u.city ? `, ${u.city}` : ''}</span></span>
                 </Link></li>
               ))}
