@@ -7,9 +7,19 @@ export interface UniversityMediaInfo { logo?: Credit; cover?: Credit; descriptio
 const L = t.s.uni.credits;
 const ext = 'underline underline-offset-2 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm';
 
+/** Эх сурвалжийн нэрийг хаягийн хостоос гаргана (Коммонс, Википедиа, эс бөгөөс сургуулийн сайт). */
+function sourceLabel(url: string): string {
+  try {
+    const host = new URL(url).hostname.replace(/^www\./, '');
+    if (host === 'commons.wikimedia.org') return L.commons;
+    if (host.endsWith('wikipedia.org')) return L.wikipedia;
+    return host;
+  } catch { return L.officialSite; }
+}
+
 function Img({ label, c }: { label: string; c: Credit }) {
   return (
-    <span>{label}: <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className={ext}>{L.commons}</a>
+    <span>{label}: <a href={c.sourceUrl} target="_blank" rel="noopener noreferrer nofollow" className={ext}>{sourceLabel(c.sourceUrl)}</a>
       {' · '}{c.licenseUrl ? <a href={c.licenseUrl} target="_blank" rel="noopener noreferrer nofollow" className={ext}>{c.license}</a> : c.license}
       {c.author ? ` · ${c.author}` : ''}
     </span>
