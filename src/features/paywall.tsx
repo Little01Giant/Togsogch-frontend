@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, ArrowLeft, Building2, CheckCircle2, ChevronRight, Clock, Loader2, Lock, Smartphone } from 'lucide-react';
@@ -146,20 +146,43 @@ export function PayModal({ productKey, targetId, opened, onClose }: { productKey
   );
 }
 
+/**
+ * Төлбөрийн цонхыг хуудаснаас ТУСДАА, дээд түвшинд (Providers) байрлуулна. Төлсний дараа хуудас шинэчлэгдэж «Нээх» товч,
+ * түгжээтэй самбар алга болдог тул цонх хуудасны дотор байвал «амжилттай» мэдэгдэл өөрөө хаагдчихдаг байсан.
+ * Одоо цонхыг зөвхөн хэрэглэгч өөрөө хаана.
+ */
+interface PayTarget { productKey: string; targetId?: string }
+const PayCtx = createContext<{ open: (t: PayTarget) => void } | null>(null);
+export function PayProvider({ children }: { children: React.ReactNode }) {
+  const [target, setTarget] = useState<PayTarget | null>(null);
+  const last = useRef<PayTarget>({ productKey: '' });
+  if (target) last.current = target;
+  return (
+    <PayCtx.Provider value={{ open: setTarget }}>
+      {children}
+      <PayModal productKey={last.current.productKey} targetId={last.current.targetId} opened={!!target} onClose={() => setTarget(null)} />
+    </PayCtx.Provider>
+  );
+}
+export function usePay() {
+  const c = useContext(PayCtx);
+  if (!c) throw new Error('usePay нь PayProvider-ийн дотор ашиглагдана');
+  return c;
+}
+
 /** Нээх товч + төлбөрийн цонх. Premium = Gold тэмдэглэгээ. */
 export function UnlockButton({ productKey, targetId, label, priceMnt }: { productKey: string; targetId?: string; label?: string; variant?: string; priceMnt?: number }) {
   const { data: me } = useMe();
   const base = useProducts().data?.find((x) => x.key === productKey);
-  const [open, setOpen] = useState(false);
+  const { open } = usePay();
   if (!base) return null;
   /** Улсын үнэ сургуулийн тооноос хамаарна → хуудас сервер тооцсон үнийг дамжуулна (бүтээгдэхүүний priceMnt нь нэгж үнэ). */
   const p = { ...base, priceMnt: priceMnt ?? base.priceMnt };
   return (
     <>
       {me
-        ? <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => setOpen(true)}><Lock />{label ?? PAY.unlock} · {mnt(p.priceMnt)}</Button>
+        ? <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => open({ productKey, targetId })}><Lock />{label ?? PAY.unlock} · {mnt(p.priceMnt)}</Button>
         : <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90"><Link href="/login">{t.s.auth.loginToPay} · {mnt(p.priceMnt)}</Link></Button>}
-      <PayModal productKey={productKey} targetId={targetId} opened={open} onClose={() => setOpen(false)} />
     </>
   );
 }

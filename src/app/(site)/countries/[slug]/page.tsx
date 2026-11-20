@@ -7,7 +7,7 @@ import { api } from '@/lib/api';
 import { t } from '@/i18n';
 import { cn } from '@/lib/utils';
 import { useMe } from '@/lib/auth';
-import { mnt, PayModal } from '@/features/paywall';
+import { mnt, usePay } from '@/features/paywall';
 import { Flag, GlossText, glossTerms, NoData, SourceBadge, StateBoundary } from '@/components/common';
 import { PageContainer } from '@/components/layout/page-container';
 import { Button } from '@/components/ui/button';
@@ -114,7 +114,7 @@ const LockedCard = ({ titles, onUnlock }: { titles: string[]; onUnlock: () => vo
 function UnlockFlow({ open, onOpenChange, country }: { open: boolean; onOpenChange: (o: boolean) => void; country: { id: string; nameMn: string; price?: { schools: number; unitMnt: number; priceMnt: number } } }) {
   const { data: me } = useMe();
   const price = country.price?.priceMnt;
-  const [paying, setPaying] = useState(false);
+  const pay = usePay();
   const items = [C.tuition, C.admission, C.exams, C.pros, C.cons];
   return (
     <>
@@ -127,12 +127,11 @@ function UnlockFlow({ open, onOpenChange, country }: { open: boolean; onOpenChan
           <DialogFooter>
             <Button variant="outline" onClick={() => onOpenChange(false)}>{t.common.cancel}</Button>
             {me
-              ? <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => { onOpenChange(false); setPaying(true); }}>{C.unlockContinue}</Button>
+              ? <Button className="bg-accent text-accent-foreground hover:bg-accent/90" onClick={() => { onOpenChange(false); pay.open({ productKey: 'country_access', targetId: country.id }); }}>{C.unlockContinue}</Button>
               : <Button asChild className="bg-accent text-accent-foreground hover:bg-accent/90"><Link href="/login">{C.unlockLogin}</Link></Button>}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      <PayModal productKey="country_access" targetId={country.id} opened={paying} onClose={() => setPaying(false)} />
     </>
   );
 }

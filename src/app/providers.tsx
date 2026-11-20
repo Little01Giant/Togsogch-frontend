@@ -4,12 +4,13 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ThemeProvider } from '@/components/layout/theme';
 import { Toaster } from '@/components/ui/misc';
 import { TooltipProvider } from '@/components/ui/overlays';
+import { PayProvider } from '@/features/paywall';
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [qc] = useState(() => new QueryClient({ defaultOptions: { queries: { staleTime: 30_000, refetchOnWindowFocus: false, retry: 1 } } }));
   return (
     <ThemeProvider>
-      <QueryClientProvider client={qc}><TooltipProvider delayDuration={200}>{children}</TooltipProvider><Toaster /></QueryClientProvider>
+      <QueryClientProvider client={qc}><TooltipProvider delayDuration={200}><PayProvider>{children}</PayProvider></TooltipProvider><Toaster /></QueryClientProvider>
     </ThemeProvider>
   );
 }
