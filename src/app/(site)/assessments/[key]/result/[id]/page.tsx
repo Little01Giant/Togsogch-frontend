@@ -1,5 +1,6 @@
 'use client';
-import { use } from 'react';
+import { use, type ComponentProps } from 'react';
+import type { CareerResultData, CityResultData, LanguageResultData, MastersResultData } from '@/types/results';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { StateBoundary } from '@/components/common';
@@ -12,8 +13,18 @@ import { PersonaResult } from '@/features/persona-result';
 import { ThinkingResult } from '@/features/thinking-result';
 import { LockBanner } from '@/features/paywall';
 
+/** Үр дүнгийн хариу: `kind`-ээр ялгагдана; хаалттай (төлбөргүй) бол `locked: true` ба өөр өгөгдөл ирэхгүй. */
+type AttemptResult =
+  | { locked: true; kind?: string }
+  | ({ locked?: false; kind: 'persona' } & ComponentProps<typeof PersonaResult>['r'])
+  | ({ locked?: false; kind: 'thinking' } & ComponentProps<typeof ThinkingResult>['r'])
+  | ({ locked?: false; kind: 'masters' } & MastersResultData)
+  | ({ locked?: false; kind: 'language' } & LanguageResultData)
+  | ({ locked?: false; kind: 'city' } & CityResultData)
+  | ({ locked?: false; kind?: 'career' } & CareerResultData);
+
 function Result({ id }: { id: string }) {
-  const { data, isLoading, error, refetch } = useQuery<any>({ queryKey: ['result', id], queryFn: () => api(`/attempts/${id}/result`) });
+  const { data, isLoading, error, refetch } = useQuery<AttemptResult>({ queryKey: ['result', id], queryFn: () => api(`/attempts/${id}/result`) });
   return (
     <PageContainer className="px-3 py-4 sm:px-6 md:py-12">
       <StateBoundary isLoading={isLoading} error={error} onRetry={refetch}>

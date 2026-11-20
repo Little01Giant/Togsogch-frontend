@@ -5,7 +5,9 @@ export interface Field {
   name: string; label: string; type: FieldType; required?: boolean; options?: { value: string; label: string }[];
   fields?: Field[]; ref?: { resource: string; labelKey: string }; hint?: string; section?: string;
 }
-export interface ResourceConfig { key: string; title: string; columns: { key: string; label: string; render?: (row: any) => React.ReactNode }[]; fields: Field[]; hasStatus: boolean; defaults?: any }
+/** Админы ерөнхий нөөцийн бичлэг: бүтэц нь нөөцөөс (config) хамаарах тул түлхүүр → unknown; `_id`, `status` нь тодорхой. */
+export type AdminDoc = { _id?: string; status?: string; [key: string]: unknown };
+export interface ResourceConfig { key: string; title: string; columns: { key: string; label: string; render?: (row: AdminDoc) => React.ReactNode }[]; fields: Field[]; hasStatus: boolean; defaults?: AdminDoc }
 
 const U = t.universities;
 const opt = (m: Record<string, string>) => Object.entries(m).map(([value, label]) => ({ value, label }));
@@ -24,7 +26,7 @@ const SOURCE: Field[] = [
   { name: 'source.reliabilityStatus', label: 'Найдвартай байдал', type: 'select', options: RELIABILITY, section: 'Эх сурвалж' },
 ];
 
-const status = { key: 'status', label: t.common.status, render: (r: any) => r.status };
+const status = { key: 'status', label: t.common.status, render: (r: AdminDoc) => r.status };
 
 export const RESOURCES: Record<string, ResourceConfig> = {
   countries: {
@@ -34,7 +36,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { name: 'nameMn', label: 'Монгол нэр', type: 'text', required: true }, { name: 'nameEn', label: 'Англи нэр', type: 'text', required: true },
       { name: 'code', label: 'Улсын код (ISO)', type: 'text', required: true }, { name: 'flag', label: 'Туг (emoji)', type: 'text' }, { name: 'region', label: 'Бүс нутаг', type: 'text' },
       { name: 'overview', label: t.countries.overview, type: 'textarea' }, { name: 'educationSystem', label: t.countries.education, type: 'textarea' },
-      { name: 'universityCount', label: 'Их сургуулийн тоо', type: 'number' }, { name: 'bachelorDuration', label: t.countries.bachelor, type: 'text' }, { name: 'masterDuration', label: t.countries.master, type: 'text' },
+      { name: 'languages', label: 'Ашигладаг хэл (хамгийн өргөн 1–2; код: en, de, mn…)', type: 'tags' }, { name: 'universityCount', label: 'Их сургуулийн тоо', type: 'number' }, { name: 'bachelorDuration', label: t.countries.bachelor, type: 'text' }, { name: 'masterDuration', label: t.countries.master, type: 'text' },
       { name: 'languagePrepInfo', label: t.countries.languagePrep, type: 'textarea' }, { name: 'admissionGeneral', label: t.countries.admission, type: 'textarea' },
       { name: 'commonExams', label: t.countries.exams, type: 'tags', hint: 'IELTS, TOEFL…' }, { name: 'tuitionRange', label: t.countries.tuition, type: 'text' },
       { name: 'admissionRules', label: 'Улсын хэлний шаардлага, хууль журам (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
@@ -77,8 +79,10 @@ export const RESOURCES: Record<string, ResourceConfig> = {
         { name: 'coverage', label: U.coverage, type: 'text' }, { name: 'eligibility', label: U.eligibility, type: 'text' }, { name: 'deadline', label: U.deadline, type: 'text' }, { name: 'url', label: U.applyLink, type: 'text' },
       ] },
       { name: 'featured', label: 'Нүүр хуудсанд онцлох', type: 'checkbox' },
-      { name: 'admission.englishTests', label: 'Хэлний шаардлага (англи болон орон нутгийн хэл) (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
-        { name: 'test', label: 'Шалгалт (IELTS, TOEFL, TestDaF, TOPIK, JLPT…)', type: 'text', required: true }, { name: 'minScore', label: 'Хамгийн бага оноо/түвшин', type: 'text' }, { name: 'note', label: 'Тэмдэглэл', type: 'text' },
+      { name: 'freeAccess', label: 'Төлбөртэй мэдээллийг бүгдэд үнэгүй нээх', type: 'checkbox', hint: 'Мэдээлэл дутуу сургуульд ашиглана: төлбөр, шалгалтын шаардлага, элсэлтийн явц нэвтрээгүй хэрэглэгчид ч харагдана.' },
+      { name: 'admission.languagePageUrl', label: 'Шалгалтын шаардлагын албан ёсны хуудас (URL, ТӨЛБӨРТЭЙ)', type: 'text' },
+      { name: 'admission.englishTests', label: 'Шалгалтын шаардлага: хэл болон бусад (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
+        { name: 'test', label: 'Шалгалт (IELTS, TOEFL, TestDaF, TOPIK, JLPT, SAT, ACT…)', type: 'text', required: true }, { name: 'minScore', label: 'Хамгийн бага оноо/түвшин', type: 'text' }, { name: 'note', label: 'Тэмдэглэл', type: 'text' },
       ] },
       { name: 'admission.procedure', label: 'Элсэлтийн явц, алхмууд (ТӨЛБӨРТЭЙ)', type: 'tags' },
       { name: 'admission.applicationLinks', label: 'Албан ёсны өргөдлийн холбоос (ТӨЛБӨРТЭЙ)', type: 'group', fields: [
@@ -90,7 +94,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
   },
   programs: {
     key: 'programs', title: t.admin.programs, hasStatus: true,
-    columns: [{ key: 'name', label: t.common.name }, { key: 'level', label: U.degree, render: (r) => U.labelsDegree[r.level] ?? r.level }, status],
+    columns: [{ key: 'name', label: t.common.name }, { key: 'level', label: U.degree, render: (r) => U.labelsDegree[String(r.level)] ?? String(r.level) }, status],
     fields: [
       { name: 'universityId', label: 'Их сургууль', type: 'ref', ref: { resource: 'universities', labelKey: 'name' }, required: true }, { name: 'name', label: 'Хөтөлбөрийн нэр', type: 'text', required: true },
       { name: 'level', label: U.degree, type: 'select', options: opt(U.labelsDegree), required: true },
@@ -134,7 +138,7 @@ export const RESOURCES: Record<string, ResourceConfig> = {
       { name: 'competencies', label: t.p2.competencies, type: 'tags' }, { name: 'commonExams', label: t.p2.exams, type: 'tags' },
     ],
   },
-  'payment-products': { key: 'payment-products', title: t.pay.adminProducts, hasStatus: false, columns: [{ key: 'key', label: 'Key' }, { key: 'title', label: t.common.name }, { key: 'priceMnt', label: t.pay.amount + ' (₮)' }, { key: 'active', label: 'Идэвхтэй', render: (r: any) => (r.active ? 'Тийм' : 'Үгүй') }],
+  'payment-products': { key: 'payment-products', title: t.pay.adminProducts, hasStatus: false, columns: [{ key: 'key', label: 'Key' }, { key: 'title', label: t.common.name }, { key: 'priceMnt', label: t.pay.amount + ' (₮)' }, { key: 'active', label: 'Идэвхтэй', render: (r: AdminDoc) => (r.active ? 'Тийм' : 'Үгүй') }],
     fields: [{ name: 'key', label: 'Key', type: 'text', required: true, hint: 'test_result | university_access | country_access' }, { name: 'title', label: 'Нэр', type: 'text', required: true }, { name: 'description', label: 'Тайлбар', type: 'textarea' }, { name: 'priceMnt', label: 'Үнэ (₮)', type: 'number', required: true }, { name: 'scope', label: 'Хамрах хүрээ', type: 'select', required: true, options: [{ value: 'attempt', label: 'Тухайн тестийн үр дүн' }, { value: 'university', label: 'Нэг сургуулийн төлбөртэй мэдээлэл' }, { value: 'country', label: 'Улсын бүх сургууль' }, { value: 'user', label: 'Бүх бүртгэл' }] }, { name: 'active', label: 'Идэвхтэй', type: 'checkbox' }] },
   'career-categories': { key: 'career-categories', title: t.admin.categories, hasStatus: false, columns: [{ key: 'nameMn', label: t.common.name }, { key: 'nameEn', label: 'English' }, { key: 'slug', label: 'Slug' }],
     fields: [{ name: 'nameMn', label: 'Монгол нэр', type: 'text', required: true }, { name: 'nameEn', label: 'Англи нэр', type: 'text' }, { name: 'slug', label: 'Slug (хоосон бол автоматаар)', type: 'text' }, { name: 'description', label: 'Тайлбар', type: 'textarea' }] },
@@ -152,9 +156,10 @@ export const ADMIN_NAV = [
 ];
 
 /* dotted-path helpers */
-export const getPath = (o: any, p: string) => p.split('.').reduce((a, k) => (a == null ? a : a[k]), o);
-export const setPath = (o: any, p: string, v: any) => {
-  const ks = p.split('.'); const root = { ...o }; let cur = root;
-  ks.forEach((k, i) => { if (i === ks.length - 1) cur[k] = v; else { cur[k] = { ...(cur[k] ?? {}) }; cur = cur[k]; } });
+type Tree = Record<string, unknown>;
+export const getPath = (o: unknown, p: string): unknown => p.split('.').reduce<unknown>((a, k) => (a == null ? a : (a as Tree)[k]), o);
+export const setPath = (o: AdminDoc, p: string, v: unknown): AdminDoc => {
+  const ks = p.split('.'); const root: Tree = { ...o }; let cur: Tree = root;
+  ks.forEach((k, i) => { if (i === ks.length - 1) cur[k] = v; else { const next: Tree = { ...((cur[k] as Tree | undefined) ?? {}) }; cur[k] = next; cur = next; } });
   return root;
 };

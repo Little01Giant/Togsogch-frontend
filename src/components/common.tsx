@@ -50,13 +50,38 @@ export function SuccessState({ title, hint, action }: { title: string; hint?: st
 export function StateBoundary({ isLoading, error, isEmpty, onRetry, emptyTitle, emptyHint, skeleton, children }: {
   isLoading?: boolean; error?: unknown; isEmpty?: boolean; onRetry?: () => void; emptyTitle?: string; emptyHint?: string; skeleton?: ReactNode; children: ReactNode;
 }) {
-  if (isLoading) return <>{skeleton ?? <Loading />}</>;
+  if (isLoading) return <SkeletonRegion>{skeleton ?? <DetailSkeleton />}</SkeletonRegion>;
   if (error) return <ErrorState error={error} onRetry={onRetry} />;
   if (isEmpty) return <EmptyState title={emptyTitle} hint={emptyHint} />;
   return <>{children}</>;
 }
 
 export const CardSkeleton = ({ className }: { className?: string }) => <Skeleton className={cn('h-56 rounded-lg', className)} />;
+
+/** Skeleton-ийг дэлгэц уншигчид «ачаалж байна» гэж мэдэгдэх бүрхэвч (skeleton өөрөө aria-hidden). */
+export function SkeletonRegion({ children }: { children: ReactNode }) {
+  return <div role="status" aria-busy="true" aria-live="polite"><span className="sr-only">{t.common.loading}</span>{children}</div>;
+}
+
+/** Нарийвчилсан хуудасны хэлбэртэй skeleton: толгой карт (лого/гарчиг/3 үзүүлэлт) + хэсгийн картууд. */
+export function DetailSkeleton({ sections = 3 }: { sections?: number }) {
+  return (
+    <div className="grid grid-cols-1 gap-5">
+      <div className="rounded-xl border bg-card p-5 md:p-6">
+        <div className="flex items-center gap-4"><Skeleton className="size-14 rounded-full" /><div className="grid flex-1 gap-2"><Skeleton className="h-7 w-2/3 max-w-xs" /><Skeleton className="h-4 w-1/3 max-w-[10rem]" /></div></div>
+        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">{[0, 1, 2].map((i) => <Skeleton key={i} className="h-16" />)}</div>
+      </div>
+      {Array.from({ length: sections }).map((_, i) => (
+        <div key={i} className="rounded-xl border bg-card p-4 md:p-5"><Skeleton className="mb-3 h-5 w-1/3 max-w-[12rem]" /><div className="grid gap-2"><Skeleton className="h-4 w-full" /><Skeleton className="h-4 w-11/12" /><Skeleton className="h-4 w-2/3" /></div></div>
+      ))}
+    </div>
+  );
+}
+
+/** Жагсаалтын мөр хэлбэртэй жижиг skeleton (профайлын блок гэх мэт). */
+export function RowsSkeleton({ rows = 3, className }: { rows?: number; className?: string }) {
+  return <div className={cn('grid gap-3 sm:grid-cols-2', className)}>{Array.from({ length: rows }).map((_, i) => <div key={i} className="flex items-center gap-3 rounded-md border p-3"><Skeleton className="size-10 shrink-0" /><div className="grid flex-1 gap-2"><Skeleton className="h-4 w-3/4" /><Skeleton className="h-3 w-1/2" /></div></div>)}</div>;
+}
 
 /** Баталгаажуулах диалог (устгах зэрэг буцаашгүй үйлдэлд) */
 export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel = t.common.delete, onConfirm, loading, destructive = true }: {

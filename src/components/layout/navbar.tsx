@@ -13,7 +13,6 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/data-display';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Sheet, SheetContent, SheetClose, SheetTitle, SheetTrigger } from '@/components/ui/overlays';
 import { PageContainer } from './page-container';
-import { ThemeToggle } from './theme';
 
 export const NAV_GROUPS = [
   { title: 'Тест өгөх', links: [{ href: '/assessments/career', label: t.nav.career }, { href: '/assessments/masters', label: t.nav.masters }, { href: '/assessments/city', label: t.nav.city }] },
@@ -112,7 +111,7 @@ export function Navbar() {
               })}
             </NavMenu.List>
           </NavMenu.Root>
-          <div className="flex items-center gap-1.5"><ThemeToggle /><UserMenu /><MobileNav /></div>
+          <div className="flex items-center gap-1.5"><UserMenu /><MobileNav /></div>
         </div>
       </PageContainer>
     </header>

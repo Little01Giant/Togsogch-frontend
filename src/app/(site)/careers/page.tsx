@@ -13,15 +13,17 @@ import { Pagination } from '@/components/ui/misc';
 import { CareerMatchCard } from '@/components/assessment/career-match-card';
 
 const SIZE = 12;
+interface CareerCategoryOption { slug: string; nameMn: string }
+interface CareerListItem { slug: string; nameMn: string; nameEn?: string; description?: string; categoryId?: { nameMn?: string } | null }
 
 function Inner() {
   const f = useUrlState();
   const [q, setQ] = useState(f.values.q ?? '');
   useEffect(() => { const h = setTimeout(() => { if ((f.values.q ?? '') !== q) f.set({ q: q || undefined }); }, 350); return () => clearTimeout(h); }, [q]); // eslint-disable-line react-hooks/exhaustive-deps
   const page = Number(f.values.page) || 1;
-  const cats = useQuery<any[]>({ queryKey: ['career-cats'], queryFn: () => api('/careers/categories') });
+  const cats = useQuery<CareerCategoryOption[]>({ queryKey: ['career-cats'], queryFn: () => api('/careers/categories') });
   const query = { q: f.values.q, category: f.values.category, page, pageSize: SIZE };
-  const { data, isLoading, error, refetch } = useQuery<{ items: any[]; total: number }>({ queryKey: ['careers', query], queryFn: () => api('/careers', { query }), placeholderData: (p) => p });
+  const { data, isLoading, error, refetch } = useQuery<{ items: CareerListItem[]; total: number }>({ queryKey: ['careers', query], queryFn: () => api('/careers', { query }), placeholderData: (p) => p });
   const cur = f.values.category ?? '';
   const chips = [{ slug: '', nameMn: t.common.all }, ...(cats.data ?? [])];
 
@@ -38,7 +40,7 @@ function Inner() {
       <StateBoundary isLoading={isLoading} error={error} onRetry={refetch} isEmpty={data?.items.length === 0}
         skeleton={<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{Array.from({ length: 6 }).map((_, i) => <CardSkeleton key={i} className="h-48" />)}</div>}>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {data?.items.map((c) => <CareerMatchCard key={c.slug} m={{ slug: c.slug, nameMn: c.nameMn, nameEn: c.nameEn, score: 0, category: c.categoryId?.nameMn, description: c.description }} className="[&_[role=img]]:hidden" />)}
+          {data?.items.map((c) => <CareerMatchCard key={c.slug} m={{ slug: c.slug, nameMn: c.nameMn, nameEn: c.nameEn ?? '', score: 0, category: c.categoryId?.nameMn, description: c.description }} className="[&_[role=img]]:hidden" />)}
         </div>
         <Pagination className="mt-8" page={page} total={Math.ceil((data?.total ?? 0) / SIZE)} onChange={(p) => f.set({ page: p === 1 ? undefined : p }, true)} />
       </StateBoundary>

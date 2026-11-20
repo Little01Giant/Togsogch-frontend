@@ -4,7 +4,7 @@ import { api, ApiError } from './api';
 
 export interface Me {
   id: string; email: string; name: string; picture?: string; role: 'user' | 'admin' | 'super_admin';
-  profile: Record<string, any>; consent: { privacyAcceptedAt?: string; isMinor?: boolean };
+  profile: Record<string, unknown>; consent: { privacyAcceptedAt?: string; isMinor?: boolean };
 }
 
 export function useMe() {

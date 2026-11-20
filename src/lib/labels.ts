@@ -6,4 +6,4 @@ export const SUBJECT_LABEL: Record<string, string> = {
 };
 
 /** Сургалтын хэлний код → Монгол нэр */
-export const LANGUAGE_LABEL: Record<string, string> = { en: 'Англи', ko: 'Солонгос', ja: 'Япон', zh: 'Хятад', de: 'Герман', fr: 'Франц', ru: 'Орос', it: 'Итали', es: 'Испани' };
+export const LANGUAGE_LABEL: Record<string, string> = { en: 'Англи', ko: 'Солонгос', ja: 'Япон', zh: 'Хятад', de: 'Герман', fr: 'Франц', ru: 'Орос', it: 'Итали', es: 'Испани', da: 'Дани', hu: 'Унгар', nl: 'Голланд', hi: 'Хинди', mn: 'Монгол' };

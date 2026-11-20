@@ -9,7 +9,7 @@ import { Pagination } from '@/components/ui/misc';
 
 export default function AdminAudit() {
   const [page, setPage] = useState(1);
-  const { data, isLoading, error, refetch } = useQuery<{ items: any[]; total: number }>({ queryKey: ['admin-audit', page], queryFn: () => api('/admin/audit-logs', { query: { page, pageSize: 30 } }), placeholderData: keepPreviousData });
+  const { data, isLoading, error, refetch } = useQuery<{ items: { _id: string; createdAt: string; actorEmail?: string; action: string; resource?: string; resourceId?: string }[]; total: number }>({ queryKey: ['admin-audit', page], queryFn: () => api('/admin/audit-logs', { query: { page, pageSize: 30 } }), placeholderData: keepPreviousData });
   return (
     <div className="grid gap-4">
       <h1 className="text-h1">{t.admin.audit}</h1>

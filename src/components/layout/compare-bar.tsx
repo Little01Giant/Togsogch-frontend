@@ -10,7 +10,7 @@ export function CompareBar() {
   const { ids, clear } = useCompare();
   if (!ids.length) return null;
   return (
-    <div className="fixed inset-x-0 bottom-0 z-sticky border-t bg-primary py-2.5 text-primary-foreground shadow-md" role="region" aria-label={t.compare.title}>
+    <div className="fixed inset-x-0 bottom-[calc(3.5rem+env(safe-area-inset-bottom))] z-sticky lg:bottom-0 border-t bg-primary py-2.5 text-primary-foreground shadow-md" role="region" aria-label={t.compare.title}>
       <PageContainer>
         <div className="flex items-center justify-between gap-3">
           <span className="flex items-center gap-2 text-sm"><Scale className="size-4" aria-hidden />{t.compare.title}: {ids.length} {t.compare.selected}</span>

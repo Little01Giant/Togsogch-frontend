@@ -11,6 +11,7 @@ import { fmtDate, t } from '@/i18n';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger, Badge, Card, Progress, Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/data-display';
 import { Button } from '@/components/ui/button';
 import { MatchRing } from '@/components/assessment/career-match-card';
+import type { CareerResultData, CategoryCareer } from '@/types/results';
 
 const R = t.result;
 const KEYS = ['R', 'I', 'A', 'S', 'E', 'C'];
@@ -48,7 +49,7 @@ function Bars({ items }: { items: [string, number | null][] }) {
 const PAGE = 5;
 
 /** Салбар доторх мэргэжлүүд: 5-aар нэмж харуулна */
-function CategoryCareers({ careers }: { careers: any[] }) {
+function CategoryCareers({ careers }: { careers: CategoryCareer[] }) {
   const [shown, setShown] = useState(PAGE);
   return (
     <>
@@ -67,7 +68,7 @@ function CategoryCareers({ careers }: { careers: any[] }) {
   );
 }
 
-export function CareerResult({ r }: { r: any }) {
+export function CareerResult({ r }: { r: CareerResultData }) {
   const [showAll, setShowAll] = useState(false);
   const [showAllCats, setShowAllCats] = useState(false);
   const [showAllLeast, setShowAllLeast] = useState(false);
@@ -77,7 +78,7 @@ export function CareerResult({ r }: { r: any }) {
   const dims: [string, string][] = [['cosine', R.cosine], ['euclidean', R.euclidean], ['interest', R.interest], ['skills', R.skills], ['workStyle', R.workStyle], ['values', R.values], ['academic', R.academic]];
   const advice: { key: string; tone: 'info' | 'warning'; title: string; text: string }[] = [
     ...(r.quality?.reducedConfidence ? [{ key: 'confidence', tone: 'warning' as const, title: R.lowConfidence, text: `${r.quality.missingAnswers} ${R.lowConfidenceNote}` }] : []),
-    ...(r.counselorFlags ?? []).map((f: any) => ({ key: f.key, tone: 'warning' as const, title: R.flagTitles[f.key as keyof typeof R.flagTitles] ?? R.flags, text: f.text })),
+    ...(r.counselorFlags ?? []).map((f) => ({ key: f.key, tone: 'warning' as const, title: R.flagTitles[f.key as keyof typeof R.flagTitles] ?? R.flags, text: f.text })),
     ...(r.notes ?? []).map((n: string) => ({ key: n, tone: 'info' as const, title: R.noteTitle, text: n })),
   ];
   const adviceCount = advice.length;
@@ -95,21 +96,21 @@ export function CareerResult({ r }: { r: any }) {
             </div>
           )}
           <p className="text-body-sm text-muted-foreground">{String(r.summary ?? '').split(' Давуу тал:')[0]}</p>
-          {r.strengths?.length > 0 && (
+          {!!r.strengths?.length && (
             <div className="grid gap-1.5">
               <p className="text-label">{R.strengths}</p>
-              <ul className="grid gap-1">{r.strengths.slice(0, 3).map((s: any) => <li key={s.key} className="flex items-start gap-1.5 text-body-sm text-muted-foreground"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />{s.name}</li>)}</ul>
+              <ul className="grid gap-1">{r.strengths.slice(0, 3).map((s) => <li key={s.key} className="flex items-start gap-1.5 text-body-sm text-muted-foreground"><Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden />{s.name}</li>)}</ul>
             </div>
           )}
         </div>
       </Card>
 
-      {r.careerMatches?.length > 0 && (
+      {!!r.careerMatches?.length && (
         <section data-testid="top-picks">
           <h2 className="mb-3 text-h4">{R.topMatches}</h2>
           <Card className="p-0">
             <ol className="divide-y divide-border">
-              {r.careerMatches.slice(0, showAll ? undefined : 3).map((m: any) => (
+              {r.careerMatches.slice(0, showAll ? undefined : 3).map((m) => (
                 <li key={m.slug}>
                   <Link href={`/careers/${m.slug}`} className="flex items-center gap-2 px-3.5 py-3 transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:px-4">
                     <span className="min-w-0 flex-1"><span className="block text-body-sm font-semibold">{m.nameMn}</span><span className="block truncate text-caption text-muted-foreground">{m.nameEn}</span></span>
@@ -129,11 +130,11 @@ export function CareerResult({ r }: { r: any }) {
         </section>
       )}
 
-      {r.categoryMatches?.length > 0 && (
+      {!!r.categoryMatches?.length && (
         <section data-testid="category-matches">
           <h2 className="mb-3 text-h4">{R.categories}</h2>
           <Accordion type="single" collapsible className="space-y-2">
-            {r.categoryMatches.slice(0, showAllCats ? undefined : 3).map((c: any) => (
+            {r.categoryMatches.slice(0, showAllCats ? undefined : 3).map((c) => (
               <AccordionItem key={c.slug} value={c.slug}>
                 <AccordionTrigger>
                   <span className="flex w-full min-w-0 items-center gap-3 pr-2">
@@ -203,34 +204,34 @@ export function CareerResult({ r }: { r: any }) {
           </ul>
         </Card>
         <div className="grid content-start gap-5">
-          {r.personality?.length > 0 && (
+          {!!r.personality?.length && (
             <Card className="p-4 sm:p-5"><h2 className="mb-4 text-h4">{R.personality}</h2>
-              <ScoreList items={r.personality.map((p: any) => [p.name, p.score])} />
+              <ScoreList items={r.personality.map((p): [string, number | null] => [p.name, p.score])} />
               <p className="mt-4 border-t border-border pt-3 text-caption text-muted-foreground">{R.personalityNote}</p></Card>
           )}
-          {r.cognitive?.length > 0 && <Card className="p-4 sm:p-5"><h2 className="mb-4 text-h4">{R.cognitive}</h2><ScoreList items={r.cognitive.map((p: any) => [p.name, p.score])} /></Card>}
+          {!!r.cognitive?.length && <Card className="p-4 sm:p-5"><h2 className="mb-4 text-h4">{R.cognitive}</h2><ScoreList items={r.cognitive.map((p): [string, number | null] => [p.name, p.score])} /></Card>}
           {r.environment && <Card className="p-5"><h2 className="mb-2 text-h4">{R.environment}</h2><p className="text-body-sm">{r.environment.label}</p></Card>}
-          {r.subjectsFocus?.length > 0 && <Card className="p-5"><h2 className="mb-2 text-h4">{R.subjects}</h2><div className="flex flex-wrap gap-1.5">{r.subjectsFocus.map((s: any) => <Badge key={s.key} variant="outline">{s.name}</Badge>)}</div></Card>}
+          {!!r.subjectsFocus?.length && <Card className="p-5"><h2 className="mb-2 text-h4">{R.subjects}</h2><div className="flex flex-wrap gap-1.5">{r.subjectsFocus.map((s) => <Badge key={s.key} variant="outline">{s.name}</Badge>)}</div></Card>}
         </div>
       </div>
 
-      {r.skillGaps?.length > 0 && (
+      {!!r.skillGaps?.length && (
         <Card className="p-5"><h2 className="mb-3 text-h4">{R.gaps}</h2>
           <Table><TableHeader><TableRow><TableHead>{t.admin.skills}</TableHead><TableHead>{R.userLevel} ({R.selfReported})</TableHead><TableHead>{R.required}</TableHead><TableHead>{t.nav.careers}</TableHead></TableRow></TableHeader>
-            <TableBody>{r.skillGaps.map((g: any) => <TableRow key={g.key}><TableCell>{g.name}</TableCell><TableCell>{g.user}</TableCell><TableCell>{g.required}</TableCell><TableCell className="whitespace-normal text-caption">{g.careers.join(', ')}</TableCell></TableRow>)}</TableBody></Table></Card>
+            <TableBody>{r.skillGaps.map((g) => <TableRow key={g.key}><TableCell>{g.name}</TableCell><TableCell>{g.user}</TableCell><TableCell>{g.required}</TableCell><TableCell className="whitespace-normal text-caption">{g.careers.join(', ')}</TableCell></TableRow>)}</TableBody></Table></Card>
       )}
 
-      {r.leastMatches?.length > 0 && (
+      {!!r.leastMatches?.length && (
         <section data-testid="career-matches">
           <h2 className="mb-3 text-h4">{R.tabNoMatch}</h2>
           <Accordion type="single" collapsible className="space-y-2" data-testid="least-matches">
-            {r.leastMatches.slice(0, showAllLeast ? undefined : 2).map((m: any, i: number) => (
+            {r.leastMatches.slice(0, showAllLeast ? undefined : 2).map((m, i) => (
               <AccordionItem key={m.slug} value={m.slug}>
                 <AccordionTrigger><span className="flex items-center gap-3"><MatchRing value={m.score} size={48} /><span><span className="block font-semibold">{i + 1}. {m.nameMn}</span><span className="block text-caption font-normal text-muted-foreground">{m.nameEn} · {R.match} {m.score}%</span></span></span></AccordionTrigger>
                 <AccordionContent>
                   <div className="grid gap-4">
-                    <div><p className="mb-1 text-label">{R.whyNot}</p><ul className="space-y-0.5 text-body-sm">{m.why.map((w: string, j: number) => <li key={j}>• {w}</li>)}</ul></div>
-                    {m.breakdown && <div><p className="mb-1.5 text-label">{R.breakdown}</p><Bars items={dims.filter(([k]) => typeof m.breakdown[k] === 'number').map(([k, label]) => [label, m.breakdown[k]])} /></div>}
+                    <div><p className="mb-1 text-label">{R.whyNot}</p><ul className="space-y-0.5 text-body-sm">{m.why.map((w, j) => <li key={j}>• {w}</li>)}</ul></div>
+                    {m.breakdown && <div><p className="mb-1.5 text-label">{R.breakdown}</p><Bars items={dims.flatMap(([k, label]): [string, number][] => { const v = m.breakdown?.[k]; return typeof v === 'number' ? [[label, v]] : []; })} /></div>}
                     <div><Button asChild size="sm" variant="outline"><Link href={`/careers/${m.slug}`}>{R.viewCareer}</Link></Button></div>
                   </div>
                 </AccordionContent>

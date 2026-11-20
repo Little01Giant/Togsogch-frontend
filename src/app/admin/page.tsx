@@ -6,8 +6,14 @@ import { fmtNumber, t } from '@/i18n';
 import { StateBoundary } from '@/components/common';
 import { StatCard } from '@/components/dashboard/stat-card';
 
+interface AdminStats {
+  totalUsers: number; dailyActiveUsers: number; assessmentsCompleted: number; assessmentsStarted: number;
+  countries: number; universities: number; programs: number; careers: number;
+  payments?: { revenueMnt?: number; byStatus?: { paid?: number } };
+}
+
 export default function AdminOverview() {
-  const { data, isLoading, error, refetch } = useQuery<any>({ queryKey: ['admin-stats'], queryFn: () => api('/admin/stats/overview') });
+  const { data, isLoading, error, refetch } = useQuery<AdminStats>({ queryKey: ['admin-stats'], queryFn: () => api('/admin/stats/overview') });
   const A = t.admin;
   const cards = data ? [
     [A.totalUsers, data.totalUsers, Users], [A.dau, data.dailyActiveUsers, UserCheck], [A.completed, data.assessmentsCompleted, CheckCircle2], [A.started, data.assessmentsStarted, PlayCircle],

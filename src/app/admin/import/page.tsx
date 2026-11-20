@@ -1,5 +1,5 @@
 'use client';
-import { useState } from 'react';
+import { useState, type ComponentProps } from 'react';
 import { useMutation } from '@tanstack/react-query';
 import { Download, Upload } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -13,14 +13,17 @@ import { Field } from '@/components/ui/form';
 import { notify } from '@/components/ui/misc';
 
 const P = t.p4;
-const variant: Record<string, any> = { error: 'destructive', create: 'success', created: 'success', update: 'info', updated: 'info' };
+type BadgeVariant = ComponentProps<typeof Badge>['variant'];
+const variant: Record<string, BadgeVariant> = { error: 'destructive', create: 'success', created: 'success', update: 'info', updated: 'info' };
+
+interface ImportReport { dryRun: boolean; created: number; updated: number; failed: number; report: { row: number; name?: string | null; status: string; errors?: string[] }[] }
 
 export default function ImportPage() {
   const [rows, setRows] = useState<Record<string, string>[]>([]);
   const run = useMutation({
-    mutationFn: (dryRun: boolean) => api<any>('/admin/tools/import/universities', { method: 'POST', body: { rows, dryRun } }),
+    mutationFn: (dryRun: boolean) => api<ImportReport>('/admin/tools/import/universities', { method: 'POST', body: { rows, dryRun } }),
     onSuccess: (r) => { if (!r.dryRun) notify({ color: 'teal', message: `${P.created}: ${r.created}, ${P.updatedN}: ${r.updated}` }); },
-    onError: (e: any) => notify({ color: 'red', message: e.message }),
+    onError: (e: Error) => notify({ color: 'red', message: e.message }),
   });
   const r = run.data;
   const onFile = async (f: File | undefined) => { run.reset(); setRows([]); if (f) setRows(parseCsv(await f.text())); };
@@ -45,7 +48,7 @@ export default function ImportPage() {
         <Card className="grid gap-4 p-5">
           <div className="grid gap-3 sm:grid-cols-4"><StatCard label={P.created} value={r.created} /><StatCard label={P.updatedN} value={r.updated} /><StatCard label={P.failed} value={r.failed} /><div className="flex items-center"><Badge variant={r.dryRun ? 'warning' : 'success'}>{r.dryRun ? 'dry-run' : 'imported'}</Badge></div></div>
           <Table><TableHeader><TableRow><TableHead>#</TableHead><TableHead>{t.common.name}</TableHead><TableHead>{t.common.status}</TableHead><TableHead /></TableRow></TableHeader>
-            <TableBody>{r.report.map((x: any) => <TableRow key={x.row}><TableCell>{x.row}</TableCell><TableCell>{x.name ?? '—'}</TableCell><TableCell><Badge variant={variant[x.status]}>{x.status}</Badge></TableCell><TableCell>{x.errors?.map((e: string) => <p key={e} className="text-caption text-destructive">{e}</p>)}</TableCell></TableRow>)}</TableBody></Table>
+            <TableBody>{r.report.map((x) => <TableRow key={x.row}><TableCell>{x.row}</TableCell><TableCell>{x.name ?? '—'}</TableCell><TableCell><Badge variant={variant[x.status]}>{x.status}</Badge></TableCell><TableCell>{x.errors?.map((e) => <p key={e} className="text-caption text-destructive">{e}</p>)}</TableCell></TableRow>)}</TableBody></Table>
         </Card>
       )}
     </div>

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Flag, NoData } from '@/components/common';
 import { Alert, Badge, Card, Progress } from '@/components/ui/data-display';
 import { MatchRing } from '@/components/assessment/career-match-card';
+import type { CityResultData } from '@/types/results';
 
 const C = t.p2.city;
 const range = (r?: [number, number]) => (r ? (r[0] === r[1] ? `${r[0]}` : `${r[0]} – ${r[1]}`) : null);
@@ -31,7 +32,7 @@ function Fact({ label, value }: { label: string; value?: string | null }) {
 
 type Gate = { career: boolean; masters: boolean; mode: 'master' | 'bachelor' | 'none' };
 
-export function CityResult({ r }: { r: any }) {
+export function CityResult({ r }: { r: CityResultData }) {
   const gate: Gate | undefined = r.universityGate;
   return (
     <div className="grid min-w-0 grid-cols-1 gap-8 [&>*]:min-w-0">
@@ -45,7 +46,7 @@ export function CityResult({ r }: { r: any }) {
         {r.languagePrep && <p className="text-body-sm text-muted-foreground">{C.languagePrep}: <b className="font-semibold text-foreground">{r.languagePrep.languageMn} {C.langSuffix}</b>{r.languagePrep.durationMn ? ` · ${r.languagePrep.durationMn}` : ''}</p>}
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3 [&>*]:min-w-0">
-          {r.dreamCities?.map((c: any, i: number) => (
+          {r.dreamCities?.map((c, i) => (
             <Card key={c.id} className="flex flex-col gap-5 p-4 sm:p-5">
               <div className="flex items-center gap-3">
                 <span className="grid size-8 shrink-0 place-items-center rounded-full bg-primary text-caption font-bold text-primary-foreground">{i + 1}</span>
@@ -57,7 +58,7 @@ export function CityResult({ r }: { r: any }) {
               </div>
 
               <ul className="grid gap-2 text-body-sm">
-                {c.why.map((w: string) => <li key={w} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-secondary" aria-hidden /><span className="min-w-0">{w}</span></li>)}
+                {c.why.map((w) => <li key={w} className="flex items-start gap-2"><Check className="mt-0.5 size-4 shrink-0 text-secondary" aria-hidden /><span className="min-w-0">{w}</span></li>)}
               </ul>
 
               <Breakdown d={c.breakdown} />
@@ -80,7 +81,7 @@ export function CityResult({ r }: { r: any }) {
                   <p className="flex items-center gap-1.5 text-label"><GraduationCap className="size-4 text-muted-foreground" aria-hidden />{C.universities}</p>
                   <p className="mb-2 mt-0.5 text-caption text-muted-foreground">{gate.mode === 'master' ? C.gateMasterTag : C.gateBachelorTag}</p>
                   {c.universities?.length
-                    ? <ul className="grid gap-1.5">{c.universities.map((u: { slug: string; name: string; city?: string | null }) => <li key={u.slug}><Link href={`/universities/${u.slug}`} className="flex flex-col rounded-md border bg-muted/40 px-3 py-2 text-body-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-medium">{u.name}</span>{u.city && <span className="text-caption text-muted-foreground">{u.city}</span>}</Link></li>)}</ul>
+                    ? <ul className="grid gap-1.5">{c.universities.map((u) => <li key={u.slug}><Link href={`/universities/${u.slug}`} className="flex flex-col rounded-md border bg-muted/40 px-3 py-2 text-body-sm transition-colors hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"><span className="font-medium">{u.name}</span>{u.city && <span className="text-caption text-muted-foreground">{u.city}</span>}</Link></li>)}</ul>
                     : <p className="text-body-sm text-muted-foreground">{C.noUnis}</p>}                </div>
               )}
             </Card>
@@ -89,7 +90,7 @@ export function CityResult({ r }: { r: any }) {
       </section>
 
       <div className="grid gap-3">
-        <Alert hideIcon title={t.result.method}><p className="text-body-sm">{r.method?.note}</p><p className="mt-1 text-caption opacity-80">{Object.entries(r.method?.weights ?? {}).map(([k, v]) => `${C.dims[k] ?? k}: ${Math.round((v as number) * 100)}%`).join(' · ')}</p></Alert>
+        <Alert hideIcon title={t.result.method}><p className="text-body-sm">{r.method?.note}</p><p className="mt-1 text-caption opacity-80">{Object.entries(r.method?.weights ?? {}).map(([k, v]) => `${C.dims[k] ?? k}: ${Math.round(v * 100)}%`).join(' · ')}</p></Alert>
         <Alert hideIcon variant="warning" title={t.assessments.disclaimerTitle}><p className="text-body-sm">{r.disclaimer}</p></Alert>
       </div>
     </div>

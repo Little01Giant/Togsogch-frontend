@@ -14,33 +14,38 @@ import { notify } from '@/components/ui/misc';
 import { AssessmentNav, AssessmentProgress } from '@/components/assessment/assessment-progress';
 import { Cheer, CheerModal } from '@/components/assessment/cheer-modal';
 import { BearLoader } from '@/components/brand/bear-loader';
-import { Question, QuestionCard } from '@/components/assessment/question-card';
+import { type AnswerValue, Question, QuestionCard } from '@/components/assessment/question-card';
 import { RequireUser } from '@/features/consent';
 
-interface Q extends Question { showIf?: { questionKey: string; equals: any } }
+interface Q extends Question { showIf?: { questionKey: string; equals: string | number } }
 interface Def { key: string; title: string; subtitle?: string; version: number; sections: { key: string; title: string; description?: string }[]; questions: Q[] }
+type Answers = Record<string, AnswerValue>;
 
-const visible = (q: Q, a: Record<string, any>) => !q.showIf?.questionKey || (Array.isArray(a[q.showIf.questionKey]) ? a[q.showIf.questionKey].includes(q.showIf.equals) : a[q.showIf.questionKey] === q.showIf.equals);
+const visible = (q: Q, a: Answers) => {
+  if (!q.showIf?.questionKey) return true;
+  const v = a[q.showIf.questionKey];
+  return Array.isArray(v) ? (v as (string | number)[]).includes(q.showIf.equals) : v === q.showIf.equals;
+};
 const GUIDE_FACES = [Frown, Annoyed, Meh, Smile, Laugh];
-const empty = (v: any) => v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length);
+const empty = (v: unknown) => v === undefined || v === null || v === '' || (Array.isArray(v) && !v.length);
 
 function Runner({ assessmentKey }: { assessmentKey: string }) {
   const router = useRouter();
   const def = useQuery<Def>({ queryKey: ['assessment-active', assessmentKey], queryFn: () => api(`/assessments/${assessmentKey}/active`), retry: false });
-  const history = useQuery<any[]>({ queryKey: ['attempts'], queryFn: () => api('/attempts') });
+  const history = useQuery<{ id: string; assessmentKey: string }[]>({ queryKey: ['attempts'], queryFn: () => api('/attempts') });
   const previous = history.data?.find((a) => a.assessmentKey === assessmentKey); // шинэ нь эхэндээ
   const [attemptId, setAttemptId] = useState<string | null>(null);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Answers>({});
   const [step, setStep] = useState(-1); // -1 → танилцуулга
   const [cheerMsg, setCheerMsg] = useState<Cheer | null>(null);
   const [guided, setGuided] = useState(false); // 1–5 онооны тайлбарыг үзсэн эсэх
   const [showInvalid, setShowInvalid] = useState(false);
   const [saving, setSaving] = useState(false);
-  const dirty = useRef<Record<string, any>>({});
-  const timer = useRef<any>(null);
+  const dirty = useRef<Answers>({});
+  const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
 
   const start = useMutation({
-    mutationFn: () => api<{ id: string; answers: Record<string, any> }>(`/assessments/${assessmentKey}/attempts`, { method: 'POST' }),
+    mutationFn: () => api<{ id: string; answers: Answers }>(`/assessments/${assessmentKey}/attempts`, { method: 'POST' }),
     onSuccess: (r) => { setAttemptId(r.id); setAnswers(r.answers ?? {}); setStep(0); },
   });
   const flush = async (id = attemptId) => {
@@ -54,13 +59,13 @@ function Runner({ assessmentKey }: { assessmentKey: string }) {
   const submit = useMutation({
     mutationFn: async () => { await flush(); await api(`/attempts/${attemptId}/submit`, { method: 'POST' }); },
     onSuccess: () => router.push(`/assessments/${assessmentKey}/result/${attemptId}`),
-    onError: (e: any) => notify({ color: 'red', message: e.message }),
+    onError: (e: Error) => notify({ color: 'red', message: e.message }),
   });
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const sections = def.data?.sections ?? [];
   const byStep = useMemo(() => sections.map((s) => (def.data?.questions ?? []).filter((q) => q.section === s.key)), [def.data, sections]);
-  const setAnswer = (k: string, v: any) => {
+  const setAnswer = (k: string, v: AnswerValue) => {
     setAnswers((a) => ({ ...a, [k]: v }));
     dirty.current[k] = v;
     clearTimeout(timer.current);

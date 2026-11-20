@@ -14,24 +14,30 @@ import { UnlockButton } from '@/features/paywall';
 
 const C = t.compare;
 const U = t.universities;
-const rank = (r: any) => (r && (r.rank || r.rankText) ? <>#{r.rank ?? r.rankText}<span className="text-caption text-muted-foreground"> · {r.edition ?? r.year}</span></> : <NoData />);
+interface CompareRank { rank?: number | null; rankText?: string | null; edition?: string | null; year?: number }
+interface CompareUni {
+  id: string; slug: string; name: string; city?: string | null; country?: { code?: string | null; nameMn?: string } | null;
+  qsWorld?: CompareRank | null; qsAsia?: CompareRank | null; tuition?: { minUsd: number; maxUsd: number } | null;
+  degreeLevels: string[]; scholarshipTypes: string[]; admissionTests?: string[];
+}
+const rank = (r?: CompareRank | null) => (r && (r.rank || r.rankText) ? <>#{r.rank ?? r.rankText}<span className="text-caption text-muted-foreground"> · {r.edition ?? r.year}</span></> : <NoData />);
 
 function Inner() {
   const sp = useSearchParams();
   const c = useCompare();
   const ids = (sp.get('ids') ?? c.ids.join(',')).split(',').filter(Boolean);
-  const res = useQuery<{ items: any[]; personal: { locked: boolean; insights: Record<string, any> | null } }>({ queryKey: ['compare', ids], queryFn: () => api('/universities/compare', { query: { ids } }), enabled: ids.length >= 2 });
+  const res = useQuery<{ items: CompareUni[]; personal: { locked: boolean; insights: Record<string, { budgetFit: string; subjectFit: string }> | null } }>({ queryKey: ['compare', ids], queryFn: () => api('/universities/compare', { query: { ids } }), enabled: ids.length >= 2 });
   const data = res.data?.items;
   const personal = res.data?.personal;
-  const rows: [string, (u: any) => React.ReactNode][] = [
+  const rows: [string, (u: CompareUni) => React.ReactNode][] = [
     [C.row.country, (u) => <span className="flex items-center gap-1.5"><Flag code={u.country?.code} size={16} />{u.country?.nameMn}</span>], [C.row.city, (u) => u.city ?? <NoData />],
     [C.row.qsWorld, (u) => rank(u.qsWorld)], [C.row.qsAsia, (u) => rank(u.qsAsia)],
     [C.row.tuition, (u) => (u.tuition ? `${fmtUsd(u.tuition.minUsd)}${u.tuition.maxUsd !== u.tuition.minUsd ? ` – ${fmtUsd(u.tuition.maxUsd)}` : ''}` : <NoData />)],
-    [C.row.degrees, (u) => u.degreeLevels.map((d: string) => U.labelsDegree[d]).join(', ') || <NoData />],
-    [C.row.scholarship, (u) => (u.scholarshipTypes.length ? u.scholarshipTypes.map((s: string) => U.labelsScholarship[s]).join(', ') : <NoData />)],
-    [U.admission, (u) => (u.admissionTests?.length ? u.admissionTests.map((a: string) => U.labelsAdmission[a] ?? a).join(', ') : <NoData />)],
+    [C.row.degrees, (u) => u.degreeLevels.map((d) => U.labelsDegree[d]).join(', ') || <NoData />],
+    [C.row.scholarship, (u) => (u.scholarshipTypes.length ? u.scholarshipTypes.map((s) => U.labelsScholarship[s]).join(', ') : <NoData />)],
+    [U.admission, (u) => (u.admissionTests?.length ? u.admissionTests.map((a) => U.labelsAdmission[a] ?? a).join(', ') : <NoData />)],
   ];
-  const personalRows: [string, (u: any) => React.ReactNode][] = personal && !personal.locked && personal.insights
+  const personalRows: [string, (u: CompareUni) => React.ReactNode][] = personal && !personal.locked && personal.insights
     ? [[t.pay.budgetFit, (u) => t.pay[personal.insights![u.id].budgetFit as 'within'] ?? t.pay.unknown], [t.pay.subjectFit, (u) => t.pay[personal.insights![u.id].subjectFit as 'match'] ?? t.pay.unknown]] : [];
 
   return (

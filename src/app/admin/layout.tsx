@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { Loading } from '@/components/common';
 import { MobileSidebar, Sidebar } from '@/components/layout/sidebar';
-import { ThemeToggle } from '@/components/layout/theme';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/data-display';
 import { t } from '@/i18n';
@@ -23,7 +22,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         <div className="flex items-center gap-1.5">
           <Button asChild variant="ghost" size="sm" className="text-hero-foreground hover:bg-white/10 hover:text-hero-foreground"><Link href="/">{t.nav.home}</Link></Button>
           <span className="hidden text-body-sm text-hero-muted sm:inline">{me.email}</span>
-          <ThemeToggle />
           <Button variant="secondary" size="sm" onClick={logout}>{t.nav.logout}</Button>
         </div>
       </header>

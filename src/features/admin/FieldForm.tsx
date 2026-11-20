@@ -10,36 +10,38 @@ import { Checkbox, Input, Label, Textarea } from '@/components/ui/form-controls'
 import { Field } from '@/components/ui/form';
 import { Combobox, MultiSelect, SimpleSelect, TagsInput } from '@/components/ui/select';
 import { DatePicker, NumberInput } from '@/components/ui/misc';
-import { Field as FieldDef, getPath, setPath } from './config';
+import { AdminDoc, Field as FieldDef, getPath, setPath } from './config';
 import { validate } from './validate';
 export { validate };
 
-function RefSelect({ f, value, onChange, error }: { f: FieldDef; value: any; onChange: (v: any) => void; error?: string }) {
-  const { data } = useQuery<{ items: any[] }>({ queryKey: ['admin-ref', f.ref!.resource], queryFn: () => api(`/admin/${f.ref!.resource}`, { query: { pageSize: 100 } }) });
-  return <Combobox invalid={!!error} value={value ? String(value._id ?? value) : undefined} onChange={onChange} options={(data?.items ?? []).map((i) => ({ value: i._id, label: i[f.ref!.labelKey] }))} placeholder={t.common.all} searchPlaceholder={t.common.search} emptyText={t.common.empty} />;
+function RefSelect({ f, value, onChange, error }: { f: FieldDef; value: unknown; onChange: (v: string | undefined) => void; error?: string }) {
+  const { data } = useQuery<{ items: AdminDoc[] }>({ queryKey: ['admin-ref', f.ref!.resource], queryFn: () => api(`/admin/${f.ref!.resource}`, { query: { pageSize: 100 } }) });
+  return <Combobox invalid={!!error} value={value ? String((value as AdminDoc)._id ?? value) : undefined} onChange={onChange} options={(data?.items ?? []).map((i) => ({ value: String(i._id), label: String(i[f.ref!.labelKey] ?? '') }))} placeholder={t.common.all} searchPlaceholder={t.common.search} emptyText={t.common.empty} />;
 }
 
-function JsonField({ value, onChange, error }: { value: any; onChange: (v: any) => void; error?: string }) {
+function JsonField({ value, onChange, error }: { value: unknown; onChange: (v: unknown) => void; error?: string }) {
   const [text, setText] = useState(JSON.stringify(value ?? {}, null, 2));
   const [err, setErr] = useState<string>();
   return <><Textarea rows={6} className="font-mono text-xs" value={text} aria-invalid={!!(err ?? error)} onChange={(e) => { setText(e.target.value); try { onChange(JSON.parse(e.target.value || '{}')); setErr(undefined); } catch { setErr('JSON буруу байна'); } }} />{(err ?? error) && <p role="alert" className="mt-1 text-caption font-medium text-destructive">{err ?? error}</p>}</>;
 }
 
-export function FieldInput({ f, value, onChange, error }: { f: FieldDef; value: any; onChange: (v: any) => void; error?: string }) {
+export function FieldInput({ f, value, onChange, error }: { f: FieldDef; value: unknown; onChange: (v: unknown) => void; error?: string }) {
+  const text = typeof value === 'string' ? value : value == null ? '' : String(value);
+  const list = Array.isArray(value) ? (value as string[]) : [];
   const wrap = (child: React.ReactNode) => <Field label={f.label} description={f.hint} error={error} required={f.required}>{child}</Field>;
   switch (f.type) {
-    case 'text': return wrap(<Input value={value ?? ''} onChange={(e) => onChange(e.target.value)} />);
-    case 'textarea': return wrap(<Textarea rows={3} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />);
-    case 'number': return wrap(<NumberInput value={value} onValueChange={onChange} />);
-    case 'select': return wrap(<SimpleSelect clearable options={f.options ?? []} value={value} onValueChange={onChange} />);
-    case 'multiselect': return wrap(<MultiSelect options={f.options ?? []} value={value ?? []} onChange={onChange} placeholder={t.common.all} searchPlaceholder={t.common.search} emptyText={t.common.empty} />);
-    case 'tags': return wrap(<TagsInput value={value ?? []} onChange={onChange} />);
+    case 'text': return wrap(<Input value={text} onChange={(e) => onChange(e.target.value)} />);
+    case 'textarea': return wrap(<Textarea rows={3} value={text} onChange={(e) => onChange(e.target.value)} />);
+    case 'number': return wrap(<NumberInput value={typeof value === 'number' ? value : null} onValueChange={onChange} />);
+    case 'select': return wrap(<SimpleSelect clearable options={f.options ?? []} value={typeof value === 'string' ? value : undefined} onValueChange={onChange} />);
+    case 'multiselect': return wrap(<MultiSelect options={f.options ?? []} value={list} onChange={onChange} placeholder={t.common.all} searchPlaceholder={t.common.search} emptyText={t.common.empty} />);
+    case 'tags': return wrap(<TagsInput value={list} onChange={onChange} />);
     case 'checkbox': return <div className="flex items-center gap-2.5 pt-7"><Checkbox id={`cb-${f.name}`} checked={!!value} onCheckedChange={(c) => onChange(!!c)} /><Label htmlFor={`cb-${f.name}`} className="cursor-pointer font-normal">{f.label}</Label></div>;
-    case 'date': return wrap(<DatePicker value={value} onChange={(v) => onChange(v ? new Date(v).toISOString() : undefined)} />);
+    case 'date': return wrap(<DatePicker value={typeof value === 'string' ? value : null} onChange={(v) => onChange(v ? new Date(v).toISOString() : undefined)} />);
     case 'ref': return wrap(<RefSelect f={f} value={value} onChange={onChange} error={error} />);
     case 'json': return wrap(<JsonField value={value} onChange={onChange} error={error} />);
     case 'group': {
-      const items: any[] = value ?? [];
+      const items: AdminDoc[] = Array.isArray(value) ? (value as AdminDoc[]) : [];
       return (
         <div className="grid gap-2"><p className="text-label">{f.label}</p>{f.hint && <p className="text-caption text-muted-foreground">{f.hint}</p>}
           {items.map((it, i) => (
@@ -53,7 +55,7 @@ export function FieldInput({ f, value, onChange, error }: { f: FieldDef; value: 
   }
 }
 
-export function FieldForm({ fields, data, onChange, errors }: { fields: FieldDef[]; data: any; onChange: (d: any) => void; errors: Record<string, string> }) {
+export function FieldForm({ fields, data, onChange, errors }: { fields: FieldDef[]; data: AdminDoc; onChange: (d: AdminDoc) => void; errors: Record<string, string> }) {
   const sections: Record<string, FieldDef[]> = {};
   fields.forEach((f) => (sections[f.section ?? ''] ??= []).push(f));
   return (

@@ -1,11 +1,11 @@
 export class ApiError extends Error {
-  constructor(public status: number, public code: string, message: string, public details?: any) { super(message); }
+  constructor(public status: number, public code: string, message: string, public details?: string[]) { super(message); }
 }
 
 const BASE = '/api/v1';
-type Opts = { method?: string; body?: any; query?: Record<string, any>; noRefresh?: boolean };
+type Opts = { method?: string; body?: unknown; query?: Record<string, unknown>; noRefresh?: boolean };
 
-function qs(query?: Record<string, any>) {
+function qs(query?: Record<string, unknown>) {
   if (!query) return '';
   const p = new URLSearchParams();
   for (const [k, v] of Object.entries(query)) {
@@ -23,7 +23,7 @@ async function tryRefresh() {
   return refreshing;
 }
 
-export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
+export async function api<T = unknown>(path: string, opts: Opts = {}): Promise<T> {
   const doFetch = () => fetch(`${BASE}${path}${qs(opts.query)}`, {
     method: opts.method ?? 'GET', credentials: 'include',
     headers: { 'x-requested-with': 'fetch', ...(opts.body !== undefined ? { 'content-type': 'application/json' } : {}) },
@@ -35,9 +35,9 @@ export async function api<T = any>(path: string, opts: Opts = {}): Promise<T> {
     if (await tryRefresh()) res = await doFetch();
   }
   const text = await res.text();
-  let data: any = null;
+  let data: (Record<string, unknown> & { code?: string; message?: string; details?: string[] }) | null = null;
   try { data = text ? JSON.parse(text) : null; } catch { /* JSON биш (жишээ: proxy-ийн HTML алдаа) */ }
-  if (!res.ok) throw new ApiError(res.status, data?.code ?? 'ERROR', data?.message ?? 'Алдаа гарлаа. Дахин оролдоно уу.', data?.details);
+  if (!res.ok) throw new ApiError(res.status, data?.code ?? 'ERROR', data?.message ?? 'Алдаа гарлаа. Дахин оролдоно уу.', Array.isArray(data?.details) ? data.details : undefined);
   if (text && data === null) throw new ApiError(res.status, 'BAD_RESPONSE', 'Серверээс буруу хариу ирлээ.');
   return data as T;
 }
