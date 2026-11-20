@@ -1,7 +1,7 @@
 'use client';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Brain, Briefcase, GraduationCap, Languages, ListChecks, MapPin, Sparkles, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Brain, Briefcase, Ghost, GraduationCap, Languages, Leaf, ListChecks, MapPin, Mountain, Sparkles, Swords, Wallet, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { t } from '@/i18n';
@@ -10,14 +10,14 @@ import { PageContainer, PageHeader } from '@/components/layout/page-container';
 import { Badge, Card } from '@/components/ui/data-display';
 
 /** Тест бүрийн дүрс (зөвхөн харагдац). Тодорхойгүй түлхүүр → ерөнхий дүрс. */
-const ICONS: Record<string, LucideIcon> = { career: Briefcase, city: MapPin, language: Languages, masters: GraduationCap, persona: Sparkles, thinking: Brain };
+const ICONS: Record<string, LucideIcon> = { career: Briefcase, city: MapPin, language: Languages, masters: GraduationCap, persona: Sparkles, thinking: Brain, money: Wallet, stress: Leaf, strength: Mountain, hunter: Swords, halloween: Ghost };
 
 interface AssessmentSummary { key: string; title: string; subtitle: string; available: boolean; freeResult?: boolean; questionCount?: number }
 
 function AssessmentCard({ a }: { a: AssessmentSummary }) {
   const Icon = ICONS[a.key] ?? ListChecks;
   const body = (
-    <Card interactive={a.available} className={cn('flex h-full flex-col gap-3 p-4 sm:p-6', !a.available && 'opacity-70')}>
+    <Card interactive={a.available} className={cn('flex h-full flex-col gap-3 p-4 sm:p-6', !a.available && 'opacity-70', a.available && !a.freeResult && 'border-accent shadow-[0_2px_0_0_var(--accent)]')} data-paid={!a.freeResult || undefined}>
       <div className="flex items-center gap-2.5">
         <span className="grid size-8 shrink-0 place-items-center rounded-lg bg-primary/10 text-primary dark:bg-secondary/15 dark:text-secondary"><Icon className="size-4" aria-hidden /></span>
         <h2 className="min-w-0 flex-1 text-h4 leading-snug">{t.assessments.names[a.key]?.title ?? a.title}</h2>

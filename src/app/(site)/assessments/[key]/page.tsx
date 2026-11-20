@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { t } from '@/i18n';
 import { EmptyState, ErrorState, Loading } from '@/components/common';
 import { PageContainer } from '@/components/layout/page-container';
+import { ARCHETYPE_KEYS } from '@/features/archetype-result';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/data-display';
 import { notify } from '@/components/ui/misc';
@@ -86,7 +87,7 @@ function Runner({ assessmentKey }: { assessmentKey: string }) {
           <li className="flex items-center gap-1.5"><ListChecks className="size-4" aria-hidden />{total} {t.assessments.questions}</li>
           <li className="flex items-center gap-1.5"><Save className="size-4" aria-hidden />{t.assessments.autosave}</li>
         </ul>
-        <p className="rounded-md bg-muted p-3.5 text-body-sm text-muted-foreground"><span><strong className="font-semibold text-foreground">{t.assessments.disclaimerTitle}.</strong> {d.key === 'persona' ? t.persona.funNote : d.key === 'thinking' ? t.thinking.note : t.assessments.intro}</span></p>
+        <p className="rounded-md bg-muted p-3.5 text-body-sm text-muted-foreground"><span><strong className="font-semibold text-foreground">{t.assessments.disclaimerTitle}.</strong> {d.key === 'persona' ? t.persona.funNote : d.key === 'thinking' ? t.thinking.note : ARCHETYPE_KEYS.includes(d.key) ? t.archetype.funNote : t.assessments.intro}</span></p>
         {start.error && <ErrorState error={start.error} />}
         <div className="grid gap-2.5">
           <Button size="lg" fullWidth loading={start.isPending} onClick={() => start.mutate()}>{previous ? t.assessments.startNew : t.assessments.start}</Button>

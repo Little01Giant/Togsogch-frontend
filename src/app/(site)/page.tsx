@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Atom, BookOpen, Brain, Briefcase, ChevronDown, Compass, Globe2, GraduationCap, Languages, Lightbulb, ListChecks, Microscope, Palette, Pencil, Rocket, Sparkles, Star, Target, Trophy, type LucideIcon } from 'lucide-react';
+import { ArrowRight, Atom, BookOpen, Brain, Briefcase, ChevronDown, Compass, Ghost, Globe2, GraduationCap, Languages, Leaf, Lightbulb, ListChecks, Microscope, Mountain, Palette, Pencil, Rocket, Sparkles, Star, Swords, Target, Trophy, Wallet, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { byMongolianPriority, isMainCountry } from '@/lib/country-order';
 import { t } from '@/i18n';
@@ -43,17 +43,17 @@ const RAIL_ITEM = 'w-[80%] shrink-0 snap-start sm:w-[45%] lg:w-auto';
 const N = t.assessments.names;
 /** Хамгийн урд байх хоёр тест (дараалал тогтмол). Бусад тестүүд API-аас ирж, ард нь нэмэгдэнэ. */
 const TESTS = [
-  { key: 'career', href: '/assessments/career', icon: Compass, tone: 'bg-gold-soft text-gold-soft-foreground', title: N.career.title, desc: N.career.subtitle, available: true },
-  { key: 'city', href: '/assessments/city', icon: Globe2, tone: 'bg-success-soft text-success-soft-foreground', title: N.city.title, desc: N.city.subtitle, available: true },
+  { key: 'career', href: '/assessments/career', icon: Compass, tone: 'bg-gold-soft text-gold-soft-foreground', title: N.career.title, desc: N.career.subtitle, available: true, paid: true },
+  { key: 'city', href: '/assessments/city', icon: Globe2, tone: 'bg-success-soft text-success-soft-foreground', title: N.city.title, desc: N.city.subtitle, available: true, paid: true },
 ];
-const EXTRA_ICONS: Record<string, LucideIcon> = { language: Languages, masters: GraduationCap, persona: Sparkles, thinking: Brain };
+const EXTRA_ICONS: Record<string, LucideIcon> = { language: Languages, masters: GraduationCap, persona: Sparkles, thinking: Brain, money: Wallet, stress: Leaf, strength: Mountain, hunter: Swords, halloween: Ghost };
 const EXTRA_TONE = 'bg-primary/10 text-primary dark:bg-secondary/15 dark:text-secondary';
 
 export default function HomePage() {
   const featured = useQuery<UniCard[]>({ queryKey: ['unis-featured'], queryFn: () => api('/universities/featured'), staleTime: 300_000 });
-  const assessments = useQuery<{ key: string; title: string; subtitle: string; available: boolean }[]>({ queryKey: ['assessments'], queryFn: () => api('/assessments') });
+  const assessments = useQuery<{ key: string; title: string; subtitle: string; available: boolean; freeResult?: boolean }[]>({ queryKey: ['assessments'], queryFn: () => api('/assessments') });
   const lead = new Set(TESTS.map((x) => x.key));
-  const extra = (assessments.data ?? []).filter((a) => !lead.has(a.key)).map((a) => ({ key: a.key, href: `/assessments/${a.key}`, icon: EXTRA_ICONS[a.key] ?? ListChecks, tone: EXTRA_TONE, title: N[a.key]?.title ?? a.title, desc: N[a.key]?.subtitle ?? a.subtitle, available: a.available }));
+  const extra = (assessments.data ?? []).filter((a) => !lead.has(a.key)).map((a) => ({ key: a.key, href: `/assessments/${a.key}`, icon: EXTRA_ICONS[a.key] ?? ListChecks, tone: EXTRA_TONE, title: N[a.key]?.title ?? a.title, desc: N[a.key]?.subtitle ?? a.subtitle, available: a.available, paid: !a.freeResult }));
   const tests = [...TESTS, ...extra];
   const countries = useQuery<{ items: { slug: string; code: string; nameMn: string; nameEn: string; publishedUniversities?: number }[] }>({ queryKey: ['countries-home'], queryFn: () => api('/countries', { query: { pageSize: 100 } }) });
   /** Итали хүртэлх улсыг анхнаасаа, үлдсэнийг «Бүгдийг харах» товчоор нээнэ */
@@ -89,7 +89,7 @@ export default function HomePage() {
       <Section title={H.testsTitle} href="/assessments" cta={<Button asChild variant="ghost"><Link href="/assessments">{H.viewAll}<ArrowRight /></Link></Button>}>
         <SwipeRow label={H.testsTitle}>
           {tests.map((x) => (
-            <Card key={x.key} interactive={x.available} role="listitem" className={`relative flex w-[85%] shrink-0 snap-start flex-col gap-2 p-4 sm:w-[calc((100%-1rem)/2.4)] sm:p-5 lg:w-[calc((100%-2rem)/3.4)] ${x.available ? '' : 'opacity-70'}`}>
+            <Card key={x.key} interactive={x.available} role="listitem" className={`relative flex w-[85%] shrink-0 snap-start flex-col gap-2 p-4 sm:w-[calc((100%-1rem)/2.4)] sm:p-5 lg:w-[calc((100%-2rem)/3.4)] ${x.available ? '' : 'opacity-70'} ${x.available && x.paid ? 'border-accent shadow-[0_2px_0_0_var(--accent)]' : ''}`}>
               <div className="flex items-start gap-3">
                 <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${x.tone}`}><x.icon className="size-6" aria-hidden /></span>
                 <h2 className="min-w-0 pt-0.5 text-h4 leading-snug">{x.available ? <Link href={x.href} className="rounded-sm after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{x.title}</Link> : x.title}</h2>

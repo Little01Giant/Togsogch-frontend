@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Brain, Briefcase, CheckCircle2, ChevronRight, GraduationCap, Globe2, Languages, ListChecks, Lock, MapPin, Sparkles, type LucideIcon } from 'lucide-react';
+import { Brain, Briefcase, CheckCircle2, ChevronRight, Ghost, GraduationCap, Globe2, Languages, Leaf, ListChecks, Lock, MapPin, Mountain, Sparkles, Swords, Wallet, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { fmtDate, t } from '@/i18n';
 import { Flag, RowsSkeleton, StateBoundary } from '@/components/common';
@@ -35,8 +35,8 @@ const PREVIEW_PAYMENTS: Payment[] = [
   { id: 'preview-p3', productKey: 'university_access', amount: 1000, currency: 'MNT', status: 'pending', createdAt: '2026-11-01T15:10:00Z', paidAt: null },
   { id: 'preview-p4', productKey: 'university_access', amount: 1000, currency: 'MNT', status: 'expired', createdAt: '2026-10-30T08:00:00Z', paidAt: null },
 ];
-const TEST_TITLE: Record<string, string> = { career: t.nav.career, masters: t.nav.masters, language: t.nav.language, city: t.nav.city, persona: t.assessments.names.persona.title, thinking: t.assessments.names.thinking.title };
-const TEST_ICON: Record<string, LucideIcon> = { career: Briefcase, city: MapPin, language: Languages, masters: GraduationCap, persona: Sparkles, thinking: Brain };
+const TEST_TITLE: Record<string, string> = { career: t.nav.career, masters: t.nav.masters, language: t.nav.language, city: t.nav.city, persona: t.assessments.names.persona.title, thinking: t.assessments.names.thinking.title, money: t.assessments.names.money.title, stress: t.assessments.names.stress.title, strength: t.assessments.names.strength.title, hunter: t.assessments.names.hunter.title, halloween: t.assessments.names.halloween.title };
+const TEST_ICON: Record<string, LucideIcon> = { career: Briefcase, city: MapPin, language: Languages, masters: GraduationCap, persona: Sparkles, thinking: Brain, money: Wallet, stress: Leaf, strength: Mountain, hunter: Swords, halloween: Ghost };
 const Block = ({ title, icon: Icon, children }: { title?: string; icon?: React.ElementType; children: React.ReactNode }) => (
   <Card className="p-3 sm:p-6">{title && <h2 className="mb-3 flex items-center gap-2 text-h3">{Icon && <Icon className="size-5 text-muted-foreground" aria-hidden />}{title}</h2>}{children}</Card>
 );
