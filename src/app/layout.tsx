@@ -15,7 +15,7 @@ export const viewport: Viewport = { themeColor: THEME_COLOR.dark, colorScheme: '
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="mn" className="dark" suppressHydrationWarning>
+    <html lang="mn" className="dark" data-scroll-behavior="smooth" suppressHydrationWarning>
       <body className="min-h-dvh antialiased"><Providers>{children}</Providers><Analytics /></body>
     </html>
   );

@@ -3,6 +3,7 @@ import { ReactNode } from 'react';
 import { BottomNav } from './layout/bottom-nav';
 import { Footer } from './layout/footer';
 import { Navbar } from './layout/navbar';
+import { ScrollToTop } from './layout/scroll-to-top';
 
 /** Нийтийн хуудасны хүрээ: Navbar + агуулга + Footer. Skip-link нь keyboard хэрэглэгчид зориулсан. */
 export function SiteShell({ children }: { children: ReactNode }) {
@@ -15,6 +16,7 @@ export function SiteShell({ children }: { children: ReactNode }) {
       {/* Доод цэс fixed тул контентын доод хэсгийг далдалахгүйн тулд зай үлдээнэ (lg-ээс дээш цэсгүй) */}
       <div aria-hidden className="h-[calc(3.5rem+env(safe-area-inset-bottom))] lg:hidden" />
       <BottomNav />
+      <ScrollToTop />
     </div>
   );
 }
