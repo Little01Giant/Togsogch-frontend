@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { fmtDate, fmtUsd, t } from './index';
 
-function walk(o: any, path = ''): [string, any][] {
+function walk(o: unknown, path = ''): [string, string][] {
   if (typeof o === 'string') return [[path, o]];
   if (Array.isArray(o)) return o.flatMap((v, i) => walk(v, `${path}[${i}]`));
   if (o && typeof o === 'object') return Object.entries(o).flatMap(([k, v]) => walk(v, path ? `${path}.${k}` : k));

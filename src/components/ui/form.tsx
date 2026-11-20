@@ -55,7 +55,7 @@ export function Field({ label, description, error, required, htmlFor, children, 
   const auto = React.useId();
   const id = htmlFor ?? auto;
   const child = React.isValidElement(children) && !htmlFor
-    ? React.cloneElement(children as React.ReactElement<any>, { id, 'aria-invalid': error ? true : undefined, 'aria-describedby': error ? `${id}-err` : description ? `${id}-desc` : undefined })
+    ? React.cloneElement(children as React.ReactElement<React.HTMLAttributes<HTMLElement>>, { id, 'aria-invalid': error ? true : undefined, 'aria-describedby': error ? `${id}-err` : description ? `${id}-desc` : undefined })
     : children;
   return (
     <div className={cn('grid gap-1.5', className)}>

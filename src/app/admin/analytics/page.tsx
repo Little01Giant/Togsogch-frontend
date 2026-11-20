@@ -10,9 +10,15 @@ import { Card, Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Ta
 const P = t.p4;
 const tick = { fontSize: 11, fill: 'var(--muted-foreground)' };
 
+interface AnalyticsData {
+  series: { date: string; started: number; completed: number; revenue?: number }[];
+  funnel: Record<string, { started: number; completed: number }>;
+  topCareers: { name: string; count: number }[];
+}
+
 export default function Analytics() {
   const [days, setDays] = useState('30');
-  const q = useQuery<any>({ queryKey: ['analytics', days], queryFn: () => api('/admin/tools/analytics', { query: { days } }) });
+  const q = useQuery<AnalyticsData>({ queryKey: ['analytics', days], queryFn: () => api('/admin/tools/analytics', { query: { days } }) });
   const d = q.data;
   return (
     <div className="grid gap-4">
@@ -28,9 +34,9 @@ export default function Analytics() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card className="p-5"><h2 className="mb-2 text-h4">{P.funnel}</h2>
               <Table><TableHeader><TableRow><TableHead>{t.admin.assessments}</TableHead><TableHead className="text-right">{P.started}</TableHead><TableHead className="text-right">{P.completedS}</TableHead><TableHead className="text-right">%</TableHead></TableRow></TableHeader>
-                <TableBody>{Object.entries(d.funnel).map(([k, v]: any) => <TableRow key={k}><TableCell>{t.assessments[k as 'career']?.name ?? k}</TableCell><TableCell className="text-right">{v.started}</TableCell><TableCell className="text-right">{v.completed}</TableCell><TableCell className="text-right">{v.started ? Math.round((v.completed / v.started) * 100) : 0}</TableCell></TableRow>)}</TableBody></Table></Card>
+                <TableBody>{Object.entries(d.funnel).map(([k, v]) => <TableRow key={k}><TableCell>{t.assessments[k as 'career']?.name ?? k}</TableCell><TableCell className="text-right">{v.started}</TableCell><TableCell className="text-right">{v.completed}</TableCell><TableCell className="text-right">{v.started ? Math.round((v.completed / v.started) * 100) : 0}</TableCell></TableRow>)}</TableBody></Table></Card>
             <Card className="p-5"><h2 className="mb-2 text-h4">{P.topCareers}</h2>
-              {d.topCareers.length ? <Table><TableBody>{d.topCareers.map((c: any) => <TableRow key={c.name}><TableCell>{c.name}</TableCell><TableCell className="text-right">{c.count}</TableCell></TableRow>)}</TableBody></Table> : <p className="text-muted-foreground">{t.common.noData}</p>}</Card>
+              {d.topCareers.length ? <Table><TableBody>{d.topCareers.map((c) => <TableRow key={c.name}><TableCell>{c.name}</TableCell><TableCell className="text-right">{c.count}</TableCell></TableRow>)}</TableBody></Table> : <p className="text-muted-foreground">{t.common.noData}</p>}</Card>
           </div>
         </>}
       </StateBoundary>

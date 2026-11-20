@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge, Card } from '@/components/ui/data-display';
 
 export default function AdminAssessments() {
-  const { data, isLoading, error, refetch } = useQuery<any[]>({ queryKey: ['admin-assessments'], queryFn: () => api('/admin/assessments') });
+  const { data, isLoading, error, refetch } = useQuery<{ key: string; title: string; questionCount: number; draftVersion: number; status: string }[]>({ queryKey: ['admin-assessments'], queryFn: () => api('/admin/assessments') });
   return (
     <div className="grid gap-4">
       <h1 className="text-h1">{t.admin.assessments}</h1>

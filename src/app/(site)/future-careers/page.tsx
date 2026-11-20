@@ -14,10 +14,20 @@ import { Alert, Badge, Card, Progress } from '@/components/ui/data-display';
 
 const P = t.p4;
 
+interface FutureCandidate { slug: string; nameMn: string; nameEn?: string; category?: string | null; categorySlug?: string | null }
+interface FutureRanked extends FutureCandidate {
+  rank: number; score: number; scores: Record<string, number>; year?: number | null;
+  source: { url?: string | null; name?: string | null; verifiedAt?: string | null };
+}
+interface FutureData {
+  published: boolean; disclaimer?: string; candidates?: FutureCandidate[]; ranked: FutureRanked[];
+  methodology: { year?: number | null; weights: Record<string, number>; sources?: { url: string; name: string }[]; notes?: string };
+}
+
 /** Редакцийн 25 нэр дэвшигч: ангилалаар шүүж, дүрстэй картаар харуулна. */
-function Candidates({ items }: { items: any[] }) {
+function Candidates({ items }: { items: FutureCandidate[] }) {
   const [cat, setCat] = useState<string>('');
-  const cats = Array.from(new Map(items.filter((c) => c.category).map((c) => [c.categorySlug ?? c.category, c.category])).entries());
+  const cats = Array.from(new Map(items.flatMap((c): [string, string][] => (c.category ? [[c.categorySlug ?? c.category, c.category]] : []))).entries());
   const shown = cat ? items.filter((c) => (c.categorySlug ?? c.category) === cat) : items;
   return (
     <Card className="p-4 md:p-5">
@@ -46,18 +56,18 @@ function Candidates({ items }: { items: any[] }) {
 }
 
 export default function FutureCareers() {
-  const { data, isLoading, error, refetch } = useQuery<any>({ queryKey: ['future'], queryFn: () => api('/future-careers') });
+  const { data, isLoading, error, refetch } = useQuery<FutureData>({ queryKey: ['future'], queryFn: () => api('/future-careers') });
   const m = data?.methodology;
   return (
     <PageContainer className="py-4 md:py-6">
       <PageHeader mascot="cheer" title={P.futureTitle} />
       <StateBoundary isLoading={isLoading} error={error} onRetry={refetch}>
-        {data && (
+        {data && m && (
           <div className="grid gap-4 md:gap-5">
             {data.published && <Alert variant="warning" hideIcon>{data.disclaimer}</Alert>}
-            {!data.published && data.candidates?.length > 0 && <Candidates items={data.candidates} />}
+            {!data.published && !!data.candidates?.length && <Candidates items={data.candidates} />}
             {!data.published && !data.candidates?.length && <EmptyState title={P.notPublished} hint={P.notPublishedHint} action={<Button asChild variant="outline"><Link href="/careers">{t.nav.careers}</Link></Button>} />}
-            {data.ranked.map((c: any) => (
+            {data.ranked.map((c) => (
               <Card key={c.slug} className="p-4 md:p-5">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex min-w-0 items-start gap-3">
@@ -80,11 +90,11 @@ export default function FutureCareers() {
                 <p><span className="text-muted-foreground">{P.researchYear}:</span> {m.year ? <Badge variant="outline">{m.year}</Badge> : <NoData />}</p>
                 <p><span className="text-muted-foreground">{P.sources}:</span> {!m.sources?.length && <NoData />}</p>
               </div>
-              {m.sources?.length > 0 && <ul className="-mt-3 mb-4 list-disc space-y-1 pl-5 text-body-sm">{m.sources.map((s: any) => <li key={s.url}><a href={s.url} target="_blank" rel="noopener noreferrer" className="text-primary underline dark:text-secondary">{s.name}</a></li>)}</ul>}
+              {!!m.sources?.length && <ul className="-mt-3 mb-4 list-disc space-y-1 pl-5 text-body-sm">{m.sources.map((s) => <li key={s.url}><a href={s.url} target="_blank" rel="noopener noreferrer" className="text-primary underline dark:text-secondary">{s.name}</a></li>)}</ul>}
               <h3 className="mb-2 text-label">{P.weights}</h3>
               <ul className="grid gap-x-8 gap-y-2.5 sm:grid-cols-2">
                 {Object.entries(m.weights).map(([k, v]) => {
-                  const pct = Math.round((v as number) * 100);
+                  const pct = Math.round(v * 100);
                   return <li key={k} className="grid gap-1"><div className="flex items-baseline justify-between gap-2 text-body-sm"><span>{P.criteria[k]}</span><span className="font-semibold tabular-nums">{pct}%</span></div><Progress value={pct} className="h-1.5" /></li>;
                 })}
               </ul>

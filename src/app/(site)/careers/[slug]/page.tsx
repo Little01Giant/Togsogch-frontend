@@ -26,6 +26,14 @@ const CheckList = ({ items }: { items?: string[] }) => (items?.length
   : <NoData />);
 
 type Entrance = { university: string; school?: string; program: string; flags?: string; level?: string; baseExams: string[]; extraExams: string[]; examGroups?: { exams: string[] }[]; year?: number; sourceName?: string; sourceUrl?: string };
+interface CareerDetailData {
+  nameMn: string; nameEn?: string; description?: string | null; categoryId?: { nameMn: string } | null; jobZone?: string | number | null;
+  entranceExams?: Entrance[]; entranceExamStatus?: 'not_required' | 'unknown' | string; requiredSkillsDetail?: { nameMn: string }[];
+  schoolSubjects?: string[]; universityMajors?: string[]; recommendedCountries?: string[];
+  market?: { demand?: string | number | null; growth?: string | number | null; salary?: string | number | null };
+  mongoliaOpportunity?: string | null; globalOpportunity?: string | null; automationImpact?: string | null; pathways?: string[];
+}
+interface CountryOption { slug: string; code?: string | null; nameMn: string }
 const SKILL_TEST = 'Ур чадварын шалгалт';
 const ExamChips = ({ items }: { items: string[] }) => <div className="flex flex-wrap gap-1.5">{items.map((e) => <Badge key={e} variant={e === SKILL_TEST ? 'outline' : 'default'} className="text-xs">{e}</Badge>)}</div>;
 
@@ -80,8 +88,8 @@ function EntranceExams({ items }: { items: Entrance[] }) {
 
 export default function CareerDetail({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
-  const { data: c, isLoading, error, refetch } = useQuery<any>({ queryKey: ['career', slug], queryFn: () => api(`/careers/${slug}`) });
-  const countries = useQuery<{ items: any[] }>({ queryKey: ['countries-all'], queryFn: () => api('/countries', { query: { pageSize: 100 } }) });
+  const { data: c, isLoading, error, refetch } = useQuery<CareerDetailData>({ queryKey: ['career', slug], queryFn: () => api(`/careers/${slug}`) });
+  const countries = useQuery<{ items: CountryOption[] }>({ queryKey: ['countries-all'], queryFn: () => api('/countries', { query: { pageSize: 100 } }) });
   const cmap = new Map((countries.data?.items ?? []).map((x) => [x.slug, x]));
   const m = c?.market ?? {};
   return (
@@ -92,16 +100,16 @@ export default function CareerDetail({ params }: { params: Promise<{ slug: strin
           <div className="grid gap-5">
             <div><h1 className="text-h1">{c.nameMn}</h1><p className="text-muted-foreground">{c.nameEn}</p></div>
             <Box aside={c.categoryId && <p className="text-h4 font-normal"><span className="text-muted-foreground">{C.field}:</span> {c.categoryId.nameMn}</p>}><p>{c.description ?? <NoData />}</p></Box>
-            {c.jobZone && <Box title={C.education}><CheckList items={C.jobZones[c.jobZone] ? [C.jobZones[c.jobZone]] : []} /></Box>}
-            {c.entranceExams?.length > 0 && <EntranceExams items={c.entranceExams} />}
+            {c.jobZone && <Box title={C.education}><CheckList items={C.jobZones[Number(c.jobZone)] ? [C.jobZones[Number(c.jobZone)]] : []} /></Box>}
+            {!!c.entranceExams?.length && <EntranceExams items={c.entranceExams} />}
             {c.entranceExamStatus === 'not_required' && <Box title={C.entranceTitle}><p className="text-body-sm" data-testid="exam-not-required">{C.entranceNotRequired}</p></Box>}
             {c.entranceExamStatus === 'unknown' && <Box title={C.entranceTitle}><p className="text-body-sm italic text-muted-foreground" data-testid="exam-unknown">{C.entranceUnknown}</p></Box>}
             <div className="grid gap-5 md:grid-cols-2">
-              <Box title={C.skills}><Chips items={c.requiredSkillsDetail?.map((s: any) => s.nameMn)} /></Box>
-              <Box title={C.subjects}><CheckList items={c.schoolSubjects?.map((s: string) => SUBJECT_LABEL[s] ?? s)} /></Box>
-              {c.universityMajors?.length > 0 && <Box title={C.majors}><Chips items={c.universityMajors} /></Box>}
+              <Box title={C.skills}><Chips items={c.requiredSkillsDetail?.map((s) => s.nameMn)} /></Box>
+              <Box title={C.subjects}><CheckList items={c.schoolSubjects?.map((s) => SUBJECT_LABEL[s] ?? s)} /></Box>
+              {!!c.universityMajors?.length && <Box title={C.majors}><Chips items={c.universityMajors} /></Box>}
               <Box title={C.countries}>
-                {c.recommendedCountries?.length ? <div className="flex flex-wrap gap-2">{c.recommendedCountries.map((s: string) => cmap.get(s) && <Button key={s} asChild variant="outline" size="sm"><Link href={`/countries/${s}`}><Flag code={cmap.get(s).code} size={16} />{cmap.get(s).nameMn}</Link></Button>)}</div> : <NoData />}
+                {c.recommendedCountries?.length ? <div className="flex flex-wrap gap-2">{c.recommendedCountries.map((s) => { const co = cmap.get(s); return co && <Button key={s} asChild variant="outline" size="sm"><Link href={`/countries/${s}`}><Flag code={co.code} size={16} />{co.nameMn}</Link></Button>; })}</div> : <NoData />}
                 <p className="mt-2 text-caption text-muted-foreground">{t.result.countryHint}</p>
               </Box>
             </div>
@@ -111,12 +119,12 @@ export default function CareerDetail({ params }: { params: Promise<{ slug: strin
                 <Alert className="mt-4">{C.marketNote}</Alert>
               </Box>
             )}
-            {(c.mongoliaOpportunity || c.globalOpportunity || c.automationImpact || c.pathways?.length > 0) && (
+            {(c.mongoliaOpportunity || c.globalOpportunity || c.automationImpact || !!c.pathways?.length) && (
               <div className="grid gap-5 md:grid-cols-2">
                 {c.mongoliaOpportunity && <Box title={C.mongolia}><p>{c.mongoliaOpportunity}</p></Box>}
                 {c.globalOpportunity && <Box title={C.global}><p>{c.globalOpportunity}</p></Box>}
                 {c.automationImpact && <Box title={C.automation}><p>{c.automationImpact}</p></Box>}
-                {c.pathways?.length > 0 && <Box title={C.pathways}><ul className="list-disc space-y-1 pl-5">{c.pathways.map((p: string) => <li key={p}>{p}</li>)}</ul></Box>}
+                {!!c.pathways?.length && <Box title={C.pathways}><ul className="list-disc space-y-1 pl-5">{c.pathways.map((p) => <li key={p}>{p}</li>)}</ul></Box>}
               </div>
             )}
             <div className="flex flex-wrap justify-end gap-3"><Button asChild><Link href="/assessments/career">{t.home.ctaCareer}</Link></Button></div>

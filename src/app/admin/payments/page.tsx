@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, type ComponentProps } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { Search } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -12,23 +12,26 @@ import { Pagination } from '@/components/ui/misc';
 import { SimpleSelect } from '@/components/ui/select';
 
 const PAY = t.pay;
-const variant: Record<string, any> = { paid: 'success', pending: 'warning', failed: 'destructive', expired: 'muted', cancelled: 'muted' };
+type BadgeVariant = ComponentProps<typeof Badge>['variant'];
+interface AdminPayment { id: string; createdAt: string; user?: { email?: string } | null; productKey: string; amount: number; status: string; senderInvoiceNo?: string; qpayPaymentId?: string | null; qpayInvoiceId?: string | null; provider?: string }
+interface BillingStats { revenueMnt?: number; byStatus?: Record<string, number>; byProduct?: Record<string, { paid: number; revenue: number }> }
+const variant: Record<string, BadgeVariant> = { paid: 'success', pending: 'warning', failed: 'destructive', expired: 'muted', cancelled: 'muted' };
 
 export default function AdminPayments() {
   const [q, setQ] = useState(''); const [dq, setDq] = useState(''); const [status, setStatus] = useState<string | undefined>(); const [page, setPage] = useState(1);
   useEffect(() => { const h = setTimeout(() => { setDq(q); setPage(1); }, 300); return () => clearTimeout(h); }, [q]);
-  const stats = useQuery<any>({ queryKey: ['billing-stats'], queryFn: () => api('/admin/billing/stats') });
+  const stats = useQuery<BillingStats>({ queryKey: ['billing-stats'], queryFn: () => api('/admin/billing/stats') });
   const query = { q: dq, status, page, pageSize: 20 };
-  const list = useQuery<{ items: any[]; total: number }>({ queryKey: ['billing-payments', query], queryFn: () => api('/admin/billing/payments', { query }), placeholderData: keepPreviousData });
+  const list = useQuery<{ items: AdminPayment[]; total: number }>({ queryKey: ['billing-payments', query], queryFn: () => api('/admin/billing/payments', { query }), placeholderData: keepPreviousData });
   return (
     <div className="grid gap-4">
       <h1 className="text-h1">{PAY.adminPayments}</h1>
       <StateBoundary isLoading={stats.isLoading} error={stats.error} onRetry={stats.refetch}>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           <StatCard label={PAY.revenue} value={`${fmtNumber(stats.data?.revenueMnt ?? 0)} ₮`} />
-          {Object.entries(stats.data?.byStatus ?? {}).map(([s, n]) => <StatCard key={s} label={PAY.statuses[s] ?? s} value={n as number} />)}
+          {Object.entries(stats.data?.byStatus ?? {}).map(([s, n]) => <StatCard key={s} label={PAY.statuses[s] ?? s} value={n} />)}
         </div>
-        {Object.keys(stats.data?.byProduct ?? {}).length > 0 && <div className="flex flex-wrap gap-2">{Object.entries(stats.data.byProduct).map(([k, v]: any) => <Badge key={k} className="px-3 py-1 text-body-sm">{PAY.products[k] ?? k}: {v.paid} · {fmtNumber(v.revenue)} ₮</Badge>)}</div>}
+        {Object.keys(stats.data?.byProduct ?? {}).length > 0 && <div className="flex flex-wrap gap-2">{Object.entries(stats.data?.byProduct ?? {}).map(([k, v]) => <Badge key={k} className="px-3 py-1 text-body-sm">{PAY.products[k] ?? k}: {v.paid} · {fmtNumber(v.revenue)} ₮</Badge>)}</div>}
       </StateBoundary>
       <div className="flex flex-wrap gap-2">
         <div className="relative w-72"><Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden /><Input className="pl-9" placeholder={`${t.common.search} (${PAY.invoice})`} aria-label={t.common.search} value={q} onChange={(e) => setQ(e.target.value)} /></div>

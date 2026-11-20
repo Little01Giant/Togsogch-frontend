@@ -1,5 +1,6 @@
 'use client';
 import { ReactNode } from 'react';
+import { BottomNav } from './layout/bottom-nav';
 import { Footer } from './layout/footer';
 import { Navbar } from './layout/navbar';
 
@@ -11,6 +12,9 @@ export function SiteShell({ children }: { children: ReactNode }) {
       <Navbar />
       <main id="main" className="flex-1">{children}</main>
       <Footer />
+      {/* Доод цэс fixed тул контентын доод хэсгийг далдалахгүйн тулд зай үлдээнэ (lg-ээс дээш цэсгүй) */}
+      <div aria-hidden className="h-[calc(3.5rem+env(safe-area-inset-bottom))] lg:hidden" />
+      <BottomNav />
     </div>
   );
 }

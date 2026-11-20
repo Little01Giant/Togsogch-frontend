@@ -31,7 +31,7 @@ describe('computeCost', () => {
     expect(usdOnly.total.mnt).toBeNull();
   });
   it('сөрөг/хоосон утга, 0 сарыг аюулгүй боловсруулна', () => {
-    const r = computeCost({ ...base, tuitionAnnual: -5, months: 0, trips: NaN as any }, 1, 3500);
+    const r = computeCost({ ...base, tuitionAnnual: -5, months: 0, trips: NaN }, 1, 3500);
     expect(Number.isFinite(r.total.cur)).toBe(true);
     expect(r.annualRecurring.cur).toBe(600 + 400 + 12000);
   });

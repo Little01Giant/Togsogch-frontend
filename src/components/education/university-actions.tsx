@@ -25,7 +25,7 @@ export function SaveButton({ id, withLabel }: { id: string; withLabel?: boolean 
   const m = useMutation({
     mutationFn: () => (saved ? api(`/saved/universities/${id}`, { method: 'DELETE' }) : api(`/saved/universities/${id}`, { method: 'POST', body: {} })),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['savedIds'] }); qc.invalidateQueries({ queryKey: ['saved'] }); },
-    onError: (e: any) => notify({ color: 'red', message: e.message }),
+    onError: (e: Error) => notify({ color: 'red', message: e.message }),
   });
   const Icon = saved ? BookmarkCheck : Bookmark;
   const label = saved ? U.unsave : U.save;

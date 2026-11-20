@@ -2,7 +2,7 @@
 import { useEffect, useState } from 'react';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { t } from '@/i18n';
 import { ConfirmDialog, StateBoundary } from '@/components/common';
 import { Button } from '@/components/ui/button';
@@ -11,7 +11,7 @@ import { Input } from '@/components/ui/form-controls';
 import { notify, Pagination } from '@/components/ui/misc';
 import { Hint, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/overlays';
 import { SimpleSelect } from '@/components/ui/select';
-import { ResourceConfig } from './config';
+import { AdminDoc, ResourceConfig } from './config';
 import { FieldForm, validate } from './FieldForm';
 
 const SIZE = 15;
@@ -19,28 +19,28 @@ const SIZE = 15;
 export function ResourceManager({ cfg }: { cfg: ResourceConfig }) {
   const qc = useQueryClient();
   const [q, setQ] = useState(''); const [dq, setDq] = useState(''); const [status, setStatus] = useState<string | undefined>(); const [page, setPage] = useState(1);
-  const [editing, setEditing] = useState<any | null>(null); const [errors, setErrors] = useState<Record<string, string>>({}); const [deleting, setDeleting] = useState<any | null>(null);
+  const [editing, setEditing] = useState<AdminDoc | null>(null); const [errors, setErrors] = useState<Record<string, string>>({}); const [deleting, setDeleting] = useState<AdminDoc | null>(null);
   useEffect(() => { const h = setTimeout(() => { setDq(q); setPage(1); }, 300); return () => clearTimeout(h); }, [q]);
   useEffect(() => { setPage(1); setQ(''); setStatus(undefined); setEditing(null); }, [cfg.key]);
 
   const query = { q: dq, status, page, pageSize: SIZE };
-  const list = useQuery<{ items: any[]; total: number }>({ queryKey: ['admin', cfg.key, query], queryFn: () => api(`/admin/${cfg.key}`, { query }), placeholderData: keepPreviousData });
+  const list = useQuery<{ items: AdminDoc[]; total: number }>({ queryKey: ['admin', cfg.key, query], queryFn: () => api(`/admin/${cfg.key}`, { query }), placeholderData: keepPreviousData });
   const refresh = () => qc.invalidateQueries({ queryKey: ['admin', cfg.key] });
-  const fail = (e: any) => notify({ color: 'red', title: t.common.error, message: e.details?.length ? `${e.message} ${e.details.join('; ')}` : e.message });
+  const fail = (e: unknown) => notify({ color: 'red', title: t.common.error, message: e instanceof ApiError && e.details?.length ? `${e.message} ${e.details.join('; ')}` : e instanceof Error ? e.message : String(e) });
 
   const save = useMutation({
-    mutationFn: (d: any) => (d._id ? api(`/admin/${cfg.key}/${d._id}`, { method: 'PATCH', body: d }) : api(`/admin/${cfg.key}`, { method: 'POST', body: d })),
+    mutationFn: (d: AdminDoc) => (d._id ? api(`/admin/${cfg.key}/${d._id}`, { method: 'PATCH', body: d }) : api(`/admin/${cfg.key}`, { method: 'POST', body: d })),
     onSuccess: (_r, d) => { notify({ color: 'teal', message: d._id ? t.common.updated : t.common.created }); setEditing(null); refresh(); qc.invalidateQueries({ queryKey: ['admin-ref'] }); }, onError: fail,
   });
-  const toggle = useMutation({ mutationFn: ({ id, action }: any) => api(`/admin/${cfg.key}/${id}/${action}`, { method: 'POST' }), onSuccess: refresh, onError: fail });
+  const toggle = useMutation({ mutationFn: ({ id, action }: { id?: string; action: string }) => api(`/admin/${cfg.key}/${id}/${action}`, { method: 'POST' }), onSuccess: refresh, onError: fail });
   const del = useMutation({ mutationFn: (id: string) => api(`/admin/${cfg.key}/${id}`, { method: 'DELETE' }), onSuccess: () => { notify({ color: 'teal', message: t.common.deleted }); setDeleting(null); refresh(); }, onError: fail });
 
-  const openEdit = async (row?: any) => {
+  const openEdit = async (row?: AdminDoc) => {
     setErrors({});
     if (!row) return setEditing({ ...(cfg.defaults ?? {}), ...(cfg.hasStatus ? { status: 'draft' } : {}) });
     try { setEditing(await api(`/admin/${cfg.key}/${row._id}`)); } catch (e) { fail(e); }
   };
-  const submit = () => { const e = validate(cfg.fields, editing); setErrors(e); if (Object.keys(e).length) { notify({ color: 'orange', message: t.validation.required }); return; } save.mutate(editing); };
+  const submit = () => { if (!editing) return; const e = validate(cfg.fields, editing); setErrors(e); if (Object.keys(e).length) { notify({ color: 'orange', message: t.validation.required }); return; } save.mutate(editing); };
 
   return (
     <div className="grid gap-4">
@@ -54,7 +54,7 @@ export function ResourceManager({ cfg }: { cfg: ResourceConfig }) {
           <TableHeader><TableRow>{cfg.columns.map((c) => <TableHead key={c.key}>{c.label}</TableHead>)}<TableHead className="text-right">{t.common.actions}</TableHead></TableRow></TableHeader>
           <TableBody>{list.data?.items.map((row) => (
             <TableRow key={row._id}>
-              {cfg.columns.map((c) => <TableCell key={c.key}>{c.key === 'status' ? <Badge variant={row.status === 'published' ? 'success' : 'muted'}>{row.status === 'published' ? t.common.published : t.common.draft}</Badge> : c.render ? c.render(row) : row[c.key] ?? <span className="text-muted-foreground">—</span>}</TableCell>)}
+              {cfg.columns.map((c) => <TableCell key={c.key}>{c.key === 'status' ? <Badge variant={row.status === 'published' ? 'success' : 'muted'}>{row.status === 'published' ? t.common.published : t.common.draft}</Badge> : c.render ? c.render(row) : (row[c.key] as React.ReactNode) ?? <span className="text-muted-foreground">—</span>}</TableCell>)}
               <TableCell><div className="flex items-center justify-end gap-1">
                 {cfg.hasStatus && <Button size="sm" variant="soft" onClick={() => toggle.mutate({ id: row._id, action: row.status === 'published' ? 'unpublish' : 'publish' })}>{row.status === 'published' ? t.common.unpublish : t.common.publish}</Button>}
                 <Hint label={t.common.edit}><Button variant="ghost" size="icon" className="size-8" onClick={() => openEdit(row)} aria-label={t.common.edit}><Pencil /></Button></Hint>
@@ -76,7 +76,7 @@ export function ResourceManager({ cfg }: { cfg: ResourceConfig }) {
           </>}
         </SheetContent>
       </Sheet>
-      <ConfirmDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)} title={t.common.delete} description={t.common.confirmDelete} loading={del.isPending} onConfirm={() => del.mutate(deleting._id)} />
+      <ConfirmDialog open={!!deleting} onOpenChange={(o) => !o && setDeleting(null)} title={t.common.delete} description={t.common.confirmDelete} loading={del.isPending} onConfirm={() => deleting?._id && del.mutate(deleting._id)} />
     </div>
   );
 }

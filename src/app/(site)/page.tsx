@@ -1,14 +1,17 @@
 'use client';
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowRight, Atom, BookOpen, Briefcase, Compass, Globe2, GraduationCap, Lightbulb, Microscope, Palette, Pencil, Rocket, Sparkles, Star, Target, Trophy } from 'lucide-react';
+import { ArrowRight, Atom, BookOpen, Brain, Briefcase, ChevronDown, Compass, Globe2, GraduationCap, Languages, Lightbulb, ListChecks, Microscope, Palette, Pencil, Rocket, Sparkles, Star, Target, Trophy, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
+import { byMongolianPriority, isMainCountry } from '@/lib/country-order';
 import { t } from '@/i18n';
 import { CardSkeleton, Flag, StateBoundary } from '@/components/common';
 import { LogoMark } from '@/components/brand/logo-mark';
 import { PageContainer, Section } from '@/components/layout/page-container';
 import { Button, buttonVariants } from '@/components/ui/button';
-import { Card } from '@/components/ui/data-display';
+import { Badge, Card } from '@/components/ui/data-display';
+import { SwipeRow } from '@/components/ui/swipe-row';
 import { UniCard, UniversityCard } from '@/components/education/university-card';
 
 const H = t.s.home;
@@ -35,17 +38,30 @@ const HERO_DECOR = [
   { Icon: Star, cls: 'left-[46%] bottom-[6%] size-4 rotate-6', delay: '-0.7s' },
   { Icon: Star, cls: 'right-[40%] top-[6%] size-4 -rotate-12', delay: '-1.3s' },
 ] as const;
-const RAIL ='-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:px-6 lg:mx-0 lg:grid lg:grid-cols-3 lg:gap-5 lg:overflow-visible lg:px-0 lg:pb-0';
+const RAIL ='-mx-4 flex snap-x snap-mandatory scroll-px-4 gap-4 overflow-x-auto px-4 pb-2 sm:-mx-6 sm:scroll-px-6 sm:px-6 lg:mx-0 lg:scroll-px-0 lg:grid lg:grid-cols-3 lg:gap-5 lg:overflow-visible lg:px-0 lg:pb-0';
 const RAIL_ITEM = 'w-[80%] shrink-0 snap-start sm:w-[45%] lg:w-auto';
 const N = t.assessments.names;
+/** Хамгийн урд байх хоёр тест (дараалал тогтмол). Бусад тестүүд API-аас ирж, ард нь нэмэгдэнэ. */
 const TESTS = [
-  { key: 'career', href: '/assessments/career', icon: Compass, tone: 'bg-gold-soft text-gold-soft-foreground', title: N.career.title, desc: N.career.subtitle },
-  { key: 'study', href: '/assessments/city', icon: Globe2, tone: 'bg-success-soft text-success-soft-foreground', title: N.city.title, desc: N.city.subtitle },
+  { key: 'career', href: '/assessments/career', icon: Compass, tone: 'bg-gold-soft text-gold-soft-foreground', title: N.career.title, desc: N.career.subtitle, available: true },
+  { key: 'city', href: '/assessments/city', icon: Globe2, tone: 'bg-success-soft text-success-soft-foreground', title: N.city.title, desc: N.city.subtitle, available: true },
 ];
+const EXTRA_ICONS: Record<string, LucideIcon> = { language: Languages, masters: GraduationCap, persona: Sparkles, thinking: Brain };
+const EXTRA_TONE = 'bg-primary/10 text-primary dark:bg-secondary/15 dark:text-secondary';
 
 export default function HomePage() {
-  const featured = useQuery<UniCard[]>({ queryKey: ['unis-featured'], queryFn: () => api('/universities/featured') });
+  const featured = useQuery<UniCard[]>({ queryKey: ['unis-featured'], queryFn: () => api('/universities/featured'), staleTime: 300_000 });
+  const assessments = useQuery<{ key: string; title: string; subtitle: string; available: boolean }[]>({ queryKey: ['assessments'], queryFn: () => api('/assessments') });
+  const lead = new Set(TESTS.map((x) => x.key));
+  const extra = (assessments.data ?? []).filter((a) => !lead.has(a.key)).map((a) => ({ key: a.key, href: `/assessments/${a.key}`, icon: EXTRA_ICONS[a.key] ?? ListChecks, tone: EXTRA_TONE, title: N[a.key]?.title ?? a.title, desc: N[a.key]?.subtitle ?? a.subtitle, available: a.available }));
+  const tests = [...TESTS, ...extra];
   const countries = useQuery<{ items: { slug: string; code: string; nameMn: string; nameEn: string; publishedUniversities?: number }[] }>({ queryKey: ['countries-home'], queryFn: () => api('/countries', { query: { pageSize: 100 } }) });
+  /** Итали хүртэлх улсыг анхнаасаа, үлдсэнийг «Бүгдийг харах» товчоор нээнэ */
+  const [showAllCountries, setShowAllCountries] = useState(false);
+  const sortedCountries = byMongolianPriority(countries.data?.items ?? []);
+  const mainCountries = sortedCountries.filter((c) => isMainCountry(c.slug));
+  const hiddenCount = sortedCountries.length - mainCountries.length;
+  const shownCountries = showAllCountries ? sortedCountries : mainCountries;
 
   return (
     <>
@@ -61,28 +77,28 @@ export default function HomePage() {
             <Icon key={cls} className={`anim-float absolute ${cls}`} style={{ animationDelay: delay }} strokeWidth={2.25} />
           ))}
         </div>
-        <PageContainer className="relative flex items-center justify-between gap-8 py-10 md:py-16">
-          <div className="flex min-w-0 flex-col gap-5">
-            <h1 className="max-w-3xl text-display font-extrabold">{t.home.heroTitle}</h1>
-            <p className="max-w-xl border-l-4 border-hero-foreground/40 pl-3 text-body-lg font-semibold italic">«{t.brand.slogan}»</p>
+        <PageContainer className="relative flex items-center justify-between gap-6 py-4 md:py-6">
+          <div className="flex min-w-0 flex-col gap-2 md:gap-3">
+            <h1 className="max-w-3xl text-h3 font-extrabold sm:text-h2 md:text-h1">{t.home.heroTitle}</h1>
+            <p className="max-w-xl border-l-4 border-hero-foreground/40 pl-3 text-body-sm font-semibold italic md:text-body-lg">«{t.brand.slogan}»</p>
           </div>
-          <LogoMark body className="anim-float hidden size-48 drop-shadow-xl md:block lg:size-60" />
+          <LogoMark body className="anim-float hidden size-28 drop-shadow-xl md:block lg:size-36" />
         </PageContainer>
       </section>
 
       <Section title={H.testsTitle} href="/assessments" cta={<Button asChild variant="ghost"><Link href="/assessments">{H.viewAll}<ArrowRight /></Link></Button>}>
-        <div className="grid gap-4 md:grid-cols-2">
-          {TESTS.map((x) => (
-            <Card key={x.key} interactive className="relative flex flex-col gap-3 p-6">
-              <div className="flex items-center gap-3">
-                <span className={`grid size-14 shrink-0 place-items-center rounded-2xl ${x.tone}`}><x.icon className="size-7" aria-hidden /></span>
-                <h2 className="min-w-0 text-h3"><Link href={x.href} className="rounded-sm after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{x.title}</Link></h2>
+        <SwipeRow label={H.testsTitle}>
+          {tests.map((x) => (
+            <Card key={x.key} interactive={x.available} role="listitem" className={`relative flex w-[85%] shrink-0 snap-start flex-col gap-2 p-4 sm:w-[calc((100%-1rem)/2.4)] sm:p-5 lg:w-[calc((100%-2rem)/3.4)] ${x.available ? '' : 'opacity-70'}`}>
+              <div className="flex items-start gap-3">
+                <span className={`grid size-11 shrink-0 place-items-center rounded-xl ${x.tone}`}><x.icon className="size-6" aria-hidden /></span>
+                <h2 className="min-w-0 pt-0.5 text-h4 leading-snug">{x.available ? <Link href={x.href} className="rounded-sm after:absolute after:inset-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring">{x.title}</Link> : x.title}</h2>
               </div>
-              <p className="text-body-sm text-muted-foreground">{x.desc}</p>
-              <div className="mt-auto flex justify-end pt-2"><span className={buttonVariants({ size: 'default' })}>{H.takeTest}<ArrowRight aria-hidden /></span></div>
+              <p className="line-clamp-3 text-body-sm text-muted-foreground">{x.desc}</p>
+              <div className="mt-auto flex justify-end pt-1">{x.available ? <span className={buttonVariants({ size: 'sm' })}>{H.takeTest}<ArrowRight aria-hidden /></span> : <Badge variant="muted">{t.assessments.comingSoon}</Badge>}</div>
             </Card>
           ))}
-        </div>
+        </SwipeRow>
       </Section>
 
       <Section title={H.featuredTitle} href="/universities" cta={<Button asChild variant="ghost"><Link href="/universities">{H.viewAll}<ArrowRight /></Link></Button>}>
@@ -92,10 +108,10 @@ export default function HomePage() {
         </StateBoundary>
       </Section>
 
-      <Section title={H.countriesTitle} href="/countries" cta={<Button asChild variant="ghost"><Link href="/countries">{H.viewAll}<ArrowRight /></Link></Button>} className="pb-8 md:pb-12">
+      <Section title={H.countriesTitle} className="pb-8 md:pb-12">
         <StateBoundary isLoading={countries.isLoading} error={countries.error} onRetry={countries.refetch} isEmpty={!countries.data?.items.length}>
           <ul className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {countries.data?.items.map((c) => (
+            {shownCountries.map((c) => (
               <li key={c.slug}>
                 <Card interactive className="relative flex h-full items-center gap-3 p-3.5">
                   <Flag code={c.code} size={32} />
@@ -105,6 +121,14 @@ export default function HomePage() {
               </li>
             ))}
           </ul>
+          {hiddenCount > 0 && (
+            <div className="mt-4 flex justify-center">
+              <Button variant="outline" aria-expanded={showAllCountries} onClick={() => setShowAllCountries((v) => !v)}>
+                {showAllCountries ? H.showFewerCountries : `${H.showAllCountries} (+${hiddenCount})`}
+                <ChevronDown className={`transition-transform ${showAllCountries ? 'rotate-180' : ''}`} aria-hidden />
+              </Button>
+            </div>
+          )}
         </StateBoundary>
       </Section>
     </>

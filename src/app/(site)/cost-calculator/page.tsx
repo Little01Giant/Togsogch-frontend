@@ -1,5 +1,6 @@
 'use client';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, type ComponentProps } from 'react';
+import type { UniCard } from '@/components/education/university-card';
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { fmtDate, fmtNumber, t } from '@/i18n';
@@ -13,6 +14,10 @@ import { Combobox, SimpleSelect } from '@/components/ui/select';
 import { NumberInput } from '@/components/ui/misc';
 
 const P = t.p4;
+type Src = ComponentProps<typeof SourceBadge>['source'];
+interface CalcTuition { level: string; faculty?: string | null; academicYear?: string | null; currency?: string; annualFee?: number | null; livingCostMonthlyUsd?: number | null; durationMonths?: number | null; isEstimate?: boolean; sourceUrl?: string | null; verifiedAt?: string | null }
+interface CalcUni { slug: string; source?: Src; tuition?: CalcTuition[] }
+interface Prefilled { source?: Src; isEstimate?: boolean; sourceUrl?: string | null; verifiedAt?: string | null }
 const init: CostInput = { tuitionAnnual: 0, accommodationMonthly: 0, foodMonthly: 0, transportMonthly: 0, otherMonthly: 0, insuranceAnnual: 0, booksAnnual: 0, visaOnce: 0, flightPerTrip: 0, trips: 2, months: 24 };
 const fmt = (n: number | null, suffix: string) => (n == null ? '—' : `${fmtNumber(Math.round(n))} ${suffix}`);
 
@@ -33,12 +38,12 @@ export default function CostCalculator() {
   const [manualRate, setManualRate] = useState<number | undefined>();
   const [uniQ, setUniQ] = useState('');
   const dq = useDebounce(uniQ, 300);
-  const [uni, setUni] = useState<any>(null);
+  const [uni, setUni] = useState<CalcUni | null>(null);
   const [entry, setEntry] = useState<string | undefined>();
-  const [prefilled, setPrefilled] = useState<any>(null);
+  const [prefilled, setPrefilled] = useState<Prefilled | null>(null);
 
-  const rate = useQuery<any>({ queryKey: ['rate'], queryFn: () => api('/meta/exchange-rate') });
-  const search = useQuery<{ items: any[] }>({ queryKey: ['calc-uni', dq], queryFn: () => api('/universities', { query: { q: dq, pageSize: 8 } }), enabled: dq.length >= 2 });
+  const rate = useQuery<{ usdToMnt: number | null; date?: string | null; source?: string | null }>({ queryKey: ['rate'], queryFn: () => api('/meta/exchange-rate') });
+  const search = useQuery<{ items: UniCard[] }>({ queryKey: ['calc-uni', dq], queryFn: () => api('/universities', { query: { q: dq, pageSize: 8 } }), enabled: dq.length >= 2 });
 
   const sysRate: number | null = rate.data?.usdToMnt ?? null;
   const usdToMnt = manualRate && manualRate > 0 ? manualRate : sysRate;
@@ -48,7 +53,7 @@ export default function CostCalculator() {
 
   const pickUni = async (slug: string | undefined) => {
     if (!slug) { setUni(null); setPrefilled(null); setEntry(undefined); return; }
-    setUni(await api<any>(`/universities/${slug}`)); setEntry(undefined);
+    setUni(await api<CalcUni>(`/universities/${slug}`)); setEntry(undefined);
   };
   const applyEntry = (idx: string | undefined) => {
     setEntry(idx);
@@ -56,7 +61,7 @@ export default function CostCalculator() {
     if (!x) return;
     if (x.currency && x.currency !== cur && ['USD', 'MNT'].includes(x.currency)) setCur(x.currency);
     setV((s) => ({ ...s, tuitionAnnual: x.annualFee ?? s.tuitionAnnual, otherMonthly: x.livingCostMonthlyUsd != null && (x.currency ?? 'USD') === 'USD' ? x.livingCostMonthlyUsd : s.otherMonthly, months: x.durationMonths ?? s.months }));
-    setPrefilled({ source: uni.source, isEstimate: x.isEstimate, sourceUrl: x.sourceUrl, verifiedAt: x.verifiedAt });
+    setPrefilled({ source: uni?.source, isEstimate: x.isEstimate, sourceUrl: x.sourceUrl, verifiedAt: x.verifiedAt });
   };
 
   const suffix = cur === 'MNT' ? '₮' : cur;
@@ -70,7 +75,7 @@ export default function CostCalculator() {
       <Card className="mb-5 grid gap-3 p-5"><h2 className="text-h4">{P.pickUni}</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           <Combobox value={uni?.slug} onChange={pickUni} onSearch={setUniQ} placeholder={t.universities.searchPlaceholder} searchPlaceholder={t.common.search} emptyText={t.common.empty} options={(search.data?.items ?? []).map((u) => ({ value: u.slug, label: `${u.name}${u.country ? ` — ${u.country.nameMn}` : ''}` }))} />
-          <SimpleSelect placeholder={P.pickEntry} disabled={!uni} clearable value={entry} onValueChange={applyEntry} options={(uni?.tuition ?? []).map((x: any, i: number) => ({ value: String(i), label: `${t.universities.labelsDegree[x.level] ?? x.level}${x.faculty ? ` · ${x.faculty}` : ''}${x.academicYear ? ` · ${x.academicYear}` : ''}` }))} />
+          <SimpleSelect placeholder={P.pickEntry} disabled={!uni} clearable value={entry} onValueChange={applyEntry} options={(uni?.tuition ?? []).map((x, i) => ({ value: String(i), label: `${t.universities.labelsDegree[x.level] ?? x.level}${x.faculty ? ` · ${x.faculty}` : ''}${x.academicYear ? ` · ${x.academicYear}` : ''}` }))} />
         </div>
         {uni && !uni.tuition?.length && <p className="text-body-sm text-muted-foreground">{t.universities.noTuitionDetail}</p>}
         {prefilled && <div className="flex flex-wrap items-center gap-2"><Badge variant={prefilled.isEstimate ? 'warning' : 'success'}>{prefilled.isEstimate ? P.estimateLabel : P.fromOfficial}</Badge><SourceBadge source={{ ...prefilled.source, verifiedAt: prefilled.verifiedAt ?? prefilled.source?.verifiedAt, sourceUrl: prefilled.sourceUrl ?? prefilled.source?.sourceUrl }} /></div>}
@@ -83,7 +88,7 @@ export default function CostCalculator() {
               <Field label={P.currency}><SimpleSelect options={['USD', 'MNT', 'EUR', 'GBP', 'KRW', 'JPY', 'CNY', 'AUD', 'CAD'].map((c) => ({ value: c, label: c }))} value={cur} onValueChange={(x) => x && setCur(x)} /></Field>
               {!['USD', 'MNT'].includes(cur) && <Field label={`${P.customRate} (${cur})`}><NumberInput min={0} step={0.000001} value={customToUsd} onValueChange={setCustomToUsd} /></Field>}
             </div>
-            <Field label={P.usdToMnt} description={sysRate && manualRate === undefined ? `${P.rateOfficial}: ${rate.data.source}${rate.data.date ? ` · ${P.rateDate}: ${fmtDate(rate.data.date)}` : ''}` : manualRate !== undefined ? P.rateManual : P.rateMissing}>
+            <Field label={P.usdToMnt} description={sysRate && manualRate === undefined ? `${P.rateOfficial}: ${rate.data?.source}${rate.data?.date ? ` · ${P.rateDate}: ${fmtDate(rate.data.date)}` : ''}` : manualRate !== undefined ? P.rateManual : P.rateMissing}>
               <NumberInput min={0} value={manualRate ?? sysRate ?? undefined} onValueChange={setManualRate} placeholder="—" />
             </Field>
           </Card>

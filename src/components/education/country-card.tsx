@@ -8,14 +8,14 @@ import { Flag } from '@/components/common';
 
 export interface CountryCardData {
   slug: string; code: string; nameMn: string; nameEn: string; publishedUniversities?: number;
-  livingCostMonthlyUsd?: { min?: number | null; max?: number | null } | null; matchProfile?: { languages?: string[] } | null; bachelorDuration?: string | null; masterDuration?: string | null;
+  livingCostMonthlyUsd?: { min?: number | null; max?: number | null } | null; languages?: string[]; matchProfile?: { languages?: string[] } | null; bachelorDuration?: string | null; masterDuration?: string | null;
 }
 
 /** Улс: туг, нэр, хэл, амьдрах зардал, боловсролын боломж, сургуулийн тоо. Мэдээлэлгүй мөрийг нэг мөрөнд нийлүүлнэ. */
 export function CountryCard({ c, compact, className }: { c: CountryCardData; compact?: boolean; className?: string }) {
   const lc = c.livingCostMonthlyUsd;
   const living = lc && (lc.min != null || lc.max != null) ? `${lc.min === lc.max ? fmtNumber(lc.min ?? 0) : `${fmtNumber(lc.min ?? 0)}–${fmtNumber(lc.max ?? 0)}`} USD` : null;
-  const langs = (c.matchProfile?.languages ?? []).map((l) => LANGUAGE_LABEL[l] ?? l);
+  const langs = (c.languages?.length ? c.languages : c.matchProfile?.languages ?? []).map((l) => LANGUAGE_LABEL[l] ?? l);
   const n = c.publishedUniversities ?? 0;
   const facts = [
     { key: 'lang', Icon: Languages, label: t.countries.cardLanguage, value: langs.length ? <span>{langs.join(', ')}</span> : null },

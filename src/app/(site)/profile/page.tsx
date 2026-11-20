@@ -5,7 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Brain, Briefcase, CheckCircle2, ChevronRight, GraduationCap, Globe2, Languages, ListChecks, Lock, MapPin, Sparkles, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
 import { fmtDate, t } from '@/i18n';
-import { Flag, StateBoundary } from '@/components/common';
+import { Flag, RowsSkeleton, StateBoundary } from '@/components/common';
 import { PageContainer } from '@/components/layout/page-container';
 import { Badge, Card } from '@/components/ui/data-display';
 import { Button } from '@/components/ui/button';
@@ -15,16 +15,21 @@ import { mnt } from '@/features/paywall';
 import type { Me } from '@/lib/auth';
 
 const P = t.s.profile;
+
+interface Attempt { id: string; assessmentKey: string; completedAt: string; unlocked?: boolean; summary?: string }
+interface Payment { id: string; productKey: string; amount: number; currency: string; status: string; createdAt: string; paidAt: string | null }
+interface UnlockedUni { slug: string; name: string; city?: string | null; country?: { code?: string | null; nameMn?: string } | null; logoUrl?: string | null }
+interface UnlockedCountry { slug: string; nameMn: string; code?: string | null }
 /** Зөвхөн хөгжүүлэлт: `NEXT_PUBLIC_UI_PREVIEW=true` үед «Нээсэн сургуулиуд», «Төлбөрийн түүх» хоосон бол дизайныг жишээ мөртэй харуулна (`/profile?preview=off` — унтраана). Production-д ямар ч үед идэвхгүй. */
 const UI_PREVIEW = process.env.NEXT_PUBLIC_UI_PREVIEW === 'true';
-const PREVIEW_UNIS = [
+const PREVIEW_UNIS: UnlockedUni[] = [
   { slug: 'preview-1', name: 'Жишээ сургууль 1', city: 'Жишээ хот', country: { code: 'DE', nameMn: 'Жишээ улс' }, logoUrl: '' },
   { slug: 'preview-2', name: 'Жишээ сургууль 2', city: '', country: { code: 'KR', nameMn: 'Жишээ улс' }, logoUrl: '' },
   { slug: 'preview-3', name: 'Жишээ сургууль 3 (нэр урт тохиолдлыг шалгах зорилготой жишээ)', city: 'Жишээ хот', country: { code: 'JP', nameMn: 'Жишээ улс' }, logoUrl: '' },
 ];
 const PAY_ROW = 'grid grid-cols-[1fr_5.5rem_6rem] items-center gap-x-2 px-3 py-3';
-const PREVIEW_COUNTRIES = [{ slug: 'preview-country', nameMn: 'Жишээ улс', code: 'KR' }];
-const PREVIEW_PAYMENTS = [
+const PREVIEW_COUNTRIES: UnlockedCountry[] = [{ slug: 'preview-country', nameMn: 'Жишээ улс', code: 'KR' }];
+const PREVIEW_PAYMENTS: Payment[] = [
   { id: 'preview-p1', productKey: 'country_access', amount: 5000, currency: 'MNT', status: 'paid', createdAt: '2026-11-03T09:00:00Z', paidAt: '2026-11-03T09:02:00Z' },
   { id: 'preview-p2', productKey: 'test_result', amount: 9900, currency: 'MNT', status: 'paid', createdAt: '2026-11-02T12:30:00Z', paidAt: '2026-11-02T12:31:00Z' },
   { id: 'preview-p3', productKey: 'university_access', amount: 1000, currency: 'MNT', status: 'pending', createdAt: '2026-11-01T15:10:00Z', paidAt: null },
@@ -37,9 +42,9 @@ const Block = ({ title, icon: Icon, children }: { title?: string; icon?: React.E
 );
 
 function ProfileInner({ me }: { me: Me }) {
-  const attempts = useQuery<any[]>({ queryKey: ['attempts'], queryFn: () => api('/attempts') });
-  const payments = useQuery<any[]>({ queryKey: ['payments-me'], queryFn: () => api('/payments/me') });
-  const access = useQuery<{ unlocked: any[]; countries: any[] }>({ queryKey: ['access'], queryFn: () => api('/users/me/access') });
+  const attempts = useQuery<Attempt[]>({ queryKey: ['attempts'], queryFn: () => api('/attempts') });
+  const payments = useQuery<Payment[]>({ queryKey: ['payments-me'], queryFn: () => api('/payments/me') });
+  const access = useQuery<{ unlocked: UnlockedUni[]; countries: UnlockedCountry[] }>({ queryKey: ['access'], queryFn: () => api('/users/me/access') });
   const assessments = useQuery<{ key: string; title: string; subtitle: string; available: boolean }[]>({ queryKey: ['assessments'], queryFn: () => api('/assessments') });
   /** Одоогоор нээлттэй, гэхдээ хэрэглэгч нэг ч удаа өгөөгүй тестүүд. */
   const takenKeys = new Set(attempts.data?.map((a) => a.assessmentKey));
@@ -49,9 +54,9 @@ function ProfileInner({ me }: { me: Me }) {
   useEffect(() => { if (UI_PREVIEW) setPreview(new URLSearchParams(window.location.search).get('preview') !== 'off'); }, []);
   const previewUnis = preview && !access.data?.unlocked.length && !access.data?.countries.length;
   const previewPay = preview && !payments.data?.length;
-  const unlockedUnis: any[] | undefined = previewUnis ? PREVIEW_UNIS : access.data?.unlocked;
-  const unlockedCountries: any[] | undefined = previewUnis ? PREVIEW_COUNTRIES : access.data?.countries;
-  const paymentRows: any[] | undefined = previewPay ? PREVIEW_PAYMENTS : payments.data;
+  const unlockedUnis: UnlockedUni[] | undefined = previewUnis ? PREVIEW_UNIS : access.data?.unlocked;
+  const unlockedCountries: UnlockedCountry[] | undefined = previewUnis ? PREVIEW_COUNTRIES : access.data?.countries;
+  const paymentRows: Payment[] | undefined = previewPay ? PREVIEW_PAYMENTS : payments.data;
 
   return (
     <PageContainer className="py-3 md:py-8">
@@ -79,7 +84,7 @@ function ProfileInner({ me }: { me: Me }) {
               <SheetDescription className="sr-only">{P.results}</SheetDescription>
             </SheetHeader>
             <div className="min-h-0 flex-1 overflow-y-auto">
-              <StateBoundary isLoading={attempts.isLoading} error={attempts.error} onRetry={attempts.refetch} isEmpty={!attempts.data?.length} emptyTitle={P.noTests}>
+              <StateBoundary skeleton={<RowsSkeleton rows={2} />} isLoading={attempts.isLoading}error={attempts.error} onRetry={attempts.refetch} isEmpty={!attempts.data?.length} emptyTitle={P.noTests}>
                 <ul className="grid gap-3">
                   {attempts.data?.map((a) => (
                     <li key={a.id} className="flex flex-col gap-3 rounded-lg border p-3">
@@ -124,7 +129,7 @@ function ProfileInner({ me }: { me: Me }) {
 
         <Block title={P.unis} icon={GraduationCap}>
           {previewUnis && <p className="mb-3 rounded-md border border-dashed bg-muted/50 p-2 text-caption text-muted-foreground" role="note">{P.previewNote}</p>}
-          <StateBoundary isLoading={!previewUnis && access.isLoading} error={previewUnis ? null : access.error} onRetry={access.refetch} isEmpty={!unlockedUnis?.length && !unlockedCountries?.length} emptyTitle={P.noUnis}>
+          <StateBoundary skeleton={<RowsSkeleton rows={2} />} isLoading={!previewUnis && access.isLoading}error={previewUnis ? null : access.error} onRetry={access.refetch} isEmpty={!unlockedUnis?.length && !unlockedCountries?.length} emptyTitle={P.noUnis}>
             <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               {unlockedCountries?.map((c) => (
                 <li key={c.slug} className="min-w-0"><Link href={previewUnis ? '/universities' : `/universities?country=${c.slug}`} className="flex min-w-0 items-center gap-3 rounded-md border p-3 transition-colors hover:bg-muted">
@@ -144,7 +149,7 @@ function ProfileInner({ me }: { me: Me }) {
 
         <Block title={P.payments}>
           {previewPay && <p className="mb-3 rounded-md border border-dashed bg-muted/50 p-2 text-caption text-muted-foreground" role="note">{P.previewNote}</p>}
-          <StateBoundary isLoading={!previewPay && payments.isLoading} error={previewPay ? null : payments.error} onRetry={payments.refetch} isEmpty={!paymentRows?.length} emptyTitle={P.noPayments}>
+          <StateBoundary skeleton={<RowsSkeleton rows={3} className="sm:grid-cols-1" />} isLoading={!previewPay && payments.isLoading}error={previewPay ? null : payments.error} onRetry={payments.refetch} isEmpty={!paymentRows?.length} emptyTitle={P.noPayments}>
             <div className="overflow-hidden rounded-lg border">
               <div className={`${PAY_ROW} bg-muted/50 text-caption font-semibold text-muted-foreground`}>
                 <span>{P.cols.method}</span><span className="text-right">{P.cols.amount}</span><span className="text-right">{P.cols.date}</span>

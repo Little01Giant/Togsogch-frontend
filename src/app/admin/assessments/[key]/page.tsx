@@ -10,7 +10,7 @@ import { Alert, Badge, Card, Table, TableBody, TableCell, TableHead, TableHeader
 import { Textarea } from '@/components/ui/form-controls';
 import { notify } from '@/components/ui/misc';
 import { Hint, Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/overlays';
-import { Field } from '@/features/admin/config';
+import { AdminDoc, Field } from '@/features/admin/config';
 import { FieldForm, validate } from '@/features/admin/FieldForm';
 
 const TYPES = [['single', 'Нэг сонголт'], ['multi', 'Олон сонголт'], ['likert', 'Likert (1–5)'], ['rating', 'Үнэлгээ'], ['text', 'Текст'], ['number', 'Тоо']].map(([value, label]) => ({ value, label }));
@@ -26,25 +26,28 @@ const QFIELDS: Field[] = [
   { name: 'showIf.questionKey', label: 'Нөхцөл: асуултын key', type: 'text' }, { name: 'showIf.equals', label: 'Нөхцөл: утга', type: 'text' },
 ];
 
+interface AssessmentDetail { title: string; draftVersion: number; sections?: { key: string }[]; scoringConfig?: unknown }
+interface AdminQuestion extends AdminDoc { _id: string; order: number; key: string; text: string; type: string; scoring?: { dimension?: string; target?: string } }
+
 export default function AssessmentEditor({ params }: { params: Promise<{ key: string }> }) {
   const { key } = use(params);
   const qc = useQueryClient();
-  const a = useQuery<any>({ queryKey: ['admin-assessment', key], queryFn: () => api(`/admin/assessments/${key}`) });
-  const qs = useQuery<any[]>({ queryKey: ['admin-questions', key], queryFn: () => api(`/admin/assessments/${key}/questions`) });
-  const [editing, setEditing] = useState<any>(null); const [errors, setErrors] = useState<Record<string, string>>({}); const [del, setDel] = useState<any>(null);
+  const a = useQuery<AssessmentDetail>({ queryKey: ['admin-assessment', key], queryFn: () => api(`/admin/assessments/${key}`) });
+  const qs = useQuery<AdminQuestion[]>({ queryKey: ['admin-questions', key], queryFn: () => api(`/admin/assessments/${key}/questions`) });
+  const [editing, setEditing] = useState<AdminDoc | null>(null); const [errors, setErrors] = useState<Record<string, string>>({}); const [del, setDel] = useState<AdminQuestion | null>(null);
   const [cfgText, setCfgText] = useState<string | null>(null);
-  const fail = (e: any) => notify({ color: 'red', message: e.message });
+  const fail = (e: Error) => notify({ color: 'red', message: e.message });
   const refresh = () => { qc.invalidateQueries({ queryKey: ['admin-questions', key] }); qc.invalidateQueries({ queryKey: ['admin-assessment', key] }); qc.invalidateQueries({ queryKey: ['admin-assessments'] }); };
 
   const save = useMutation({
-    mutationFn: (d: any) => { const body = { ...d, showIf: d.showIf?.questionKey ? d.showIf : undefined }; return d._id ? api(`/admin/assessments/${key}/questions/${d._id}`, { method: 'PATCH', body }) : api(`/admin/assessments/${key}/questions`, { method: 'POST', body }); },
+    mutationFn: (d: AdminDoc) => { const showIf = d.showIf as { questionKey?: string } | undefined; const body = { ...d, showIf: showIf?.questionKey ? showIf : undefined }; return d._id ? api(`/admin/assessments/${key}/questions/${d._id}`, { method: 'PATCH', body }) : api(`/admin/assessments/${key}/questions`, { method: 'POST', body }); },
     onSuccess: () => { notify({ color: 'teal', message: t.common.saved }); setEditing(null); refresh(); }, onError: fail,
   });
   const remove = useMutation({ mutationFn: (id: string) => api(`/admin/assessments/${key}/questions/${id}`, { method: 'DELETE' }), onSuccess: () => { setDel(null); refresh(); }, onError: fail });
-  const publish = useMutation({ mutationFn: () => api(`/admin/assessments/${key}/publish`, { method: 'POST' }), onSuccess: (r: any) => { notify({ color: 'teal', message: `v${r.version} нийтлэгдлээ (${r.questionCount} асуулт)` }); refresh(); }, onError: fail });
-  const saveCfg = useMutation({ mutationFn: (scoringConfig: any) => api(`/admin/assessments/${key}`, { method: 'PATCH', body: { scoringConfig } }), onSuccess: () => { notify({ color: 'teal', message: t.common.saved }); refresh(); }, onError: fail });
+  const publish = useMutation({ mutationFn: () => api<{ version: number; questionCount: number }>(`/admin/assessments/${key}/publish`, { method: 'POST' }), onSuccess: (r: { version: number; questionCount: number }) => { notify({ color: 'teal', message: `v${r.version} нийтлэгдлээ (${r.questionCount} асуулт)` }); refresh(); }, onError: fail });
+  const saveCfg = useMutation({ mutationFn: (scoringConfig: unknown) => api(`/admin/assessments/${key}`, { method: 'PATCH', body: { scoringConfig } }), onSuccess: () => { notify({ color: 'teal', message: t.common.saved }); refresh(); }, onError: fail });
 
-  const submit = () => { const e = validate(QFIELDS, editing); setErrors(e); if (!Object.keys(e).length) save.mutate(editing); };
+  const submit = () => { if (!editing) return; const e = validate(QFIELDS, editing); setErrors(e); if (!Object.keys(e).length) save.mutate(editing); };
   const cfgValue = cfgText ?? JSON.stringify(a.data?.scoringConfig ?? {}, null, 2);
   let cfgErr: string | undefined; try { JSON.parse(cfgValue); } catch { cfgErr = 'JSON буруу байна'; }
 
@@ -57,7 +60,7 @@ export default function AssessmentEditor({ params }: { params: Promise<{ key: st
           <Tabs defaultValue="questions">
             <TabsList><TabsTrigger value="questions">{t.admin.questions}</TabsTrigger><TabsTrigger value="scoring">{t.admin.scoringConfig}</TabsTrigger></TabsList>
             <TabsContent value="questions" className="grid gap-3">
-              <div><Button variant="outline" onClick={() => { setErrors({}); setEditing({ required: true, type: 'likert', scale: { min: 1, max: 5 }, section: a.data.sections?.[0]?.key }); }}><Plus />{t.admin.addQuestion}</Button></div>
+              <div><Button variant="outline" onClick={() => { setErrors({}); setEditing({ required: true, type: 'likert', scale: { min: 1, max: 5 }, section: a.data?.sections?.[0]?.key }); }}><Plus />{t.admin.addQuestion}</Button></div>
               <StateBoundary isLoading={qs.isLoading} error={qs.error} isEmpty={!qs.data?.length}>
                 <Table><TableHeader><TableRow><TableHead>#</TableHead><TableHead>Key</TableHead><TableHead>Асуулт</TableHead><TableHead>Төрөл</TableHead><TableHead>Онооны чиглэл</TableHead><TableHead /></TableRow></TableHeader>
                   <TableBody>{qs.data?.map((q) => (
@@ -82,7 +85,7 @@ export default function AssessmentEditor({ params }: { params: Promise<{ key: st
                 <div className="sticky bottom-0 -mx-6 -mb-6 mt-2 flex justify-end gap-2 border-t bg-card px-6 py-3"><Button variant="outline" onClick={() => setEditing(null)}>{t.common.cancel}</Button><Button loading={save.isPending} onClick={submit}>{t.common.save}</Button></div></>}
             </SheetContent>
           </Sheet>
-          <ConfirmDialog open={!!del} onOpenChange={(o) => !o && setDel(null)} title={t.common.delete} description={t.common.confirmDelete} loading={remove.isPending} onConfirm={() => remove.mutate(del._id)} />
+          <ConfirmDialog open={!!del} onOpenChange={(o) => !o && setDel(null)} title={t.common.delete} description={t.common.confirmDelete} loading={remove.isPending} onConfirm={() => del && remove.mutate(del._id)} />
         </div>
       )}
     </StateBoundary>

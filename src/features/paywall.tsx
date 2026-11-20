@@ -61,7 +61,16 @@ export function PayModal({ productKey, targetId, opened, onClose }: { productKey
             <>
               <p className="text-h2">{mnt(pay.amount)}</p>
               {pay.qrImage ? <img src={pay.qrImage} alt="QPay QR" width={240} height={240} className="size-60 rounded-md border bg-white p-2" /> : <p className="text-muted-foreground">{PAY.noQr}</p>}
-              <p className="text-center text-body-sm text-muted-foreground">{PAY.scan}</p>
+              <div className="w-full rounded-lg border bg-muted/40 p-3" data-testid="pay-steps">
+                <p className="mb-2 text-body-sm font-semibold">{PAY.stepsTitle}</p>
+                <ol className="grid gap-2">{PAY.steps.map((s, i) => (
+                  <li key={i} className="flex items-start gap-2.5 text-body-sm">
+                    <span className="grid size-5 shrink-0 place-items-center rounded-full bg-accent/15 text-caption font-bold text-accent">{i + 1}</span>
+                    <span className="min-w-0">{s}</span>
+                  </li>))}
+                </ol>
+                {pay.urls?.length > 0 && <p className="mt-2 text-caption text-muted-foreground md:hidden">{PAY.stepsMobile}</p>}
+              </div>
               {pay.urls?.length > 0 && <div className="flex flex-wrap justify-center gap-1.5 md:hidden">{pay.urls.slice(0, 6).map((u) => <Button key={u.name} asChild variant="outline" size="sm"><a href={u.link}>{u.description ?? u.name}</a></Button>)}</div>}
               {pay.shortUrl && <Button asChild variant="link" size="sm"><a href={pay.shortUrl} target="_blank" rel="noopener noreferrer">{PAY.open}</a></Button>}
               <p className="flex items-center gap-2 text-body-sm" role="status"><Loader2 className="size-3.5 animate-spin" />{PAY.waiting} · {fmtLeft(left)}</p>
@@ -79,11 +88,13 @@ export function PayModal({ productKey, targetId, opened, onClose }: { productKey
 }
 
 /** Нээх товч + төлбөрийн цонх. Premium = Gold тэмдэглэгээ. */
-export function UnlockButton({ productKey, targetId, label }: { productKey: string; targetId?: string; label?: string; variant?: string }) {
+export function UnlockButton({ productKey, targetId, label, priceMnt }: { productKey: string; targetId?: string; label?: string; variant?: string; priceMnt?: number }) {
   const { data: me } = useMe();
-  const p = useProducts().data?.find((x) => x.key === productKey);
+  const base = useProducts().data?.find((x) => x.key === productKey);
   const [open, setOpen] = useState(false);
-  if (!p) return null;
+  if (!base) return null;
+  /** Улсын үнэ сургуулийн тооноос хамаарна → хуудас сервер тооцсон үнийг дамжуулна (бүтээгдэхүүний priceMnt нь нэгж үнэ). */
+  const p = { ...base, priceMnt: priceMnt ?? base.priceMnt };
   return (
     <>
       {me

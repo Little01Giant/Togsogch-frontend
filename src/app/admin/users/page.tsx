@@ -12,14 +12,16 @@ import { Input } from '@/components/ui/form-controls';
 import { notify, Pagination } from '@/components/ui/misc';
 import { SimpleSelect } from '@/components/ui/select';
 
+interface AdminUser { _id: string; name: string; email: string; role: string; status: string; lastLoginAt?: string | null }
+
 export default function AdminUsers() {
   const { data: me } = useMe();
   const qc = useQueryClient();
   const [q, setQ] = useState(''); const [dq, setDq] = useState(''); const [page, setPage] = useState(1);
   useEffect(() => { const h = setTimeout(() => { setDq(q); setPage(1); }, 300); return () => clearTimeout(h); }, [q]);
   const query = { q: dq, page, pageSize: 20 };
-  const { data, isLoading, error, refetch } = useQuery<{ items: any[]; total: number }>({ queryKey: ['admin-users', query], queryFn: () => api('/admin/manage/users', { query }), placeholderData: keepPreviousData });
-  const m = useMutation({ mutationFn: ({ id, body }: any) => api(`/admin/manage/users/${id}`, { method: 'PATCH', body }), onSuccess: () => { notify({ color: 'teal', message: t.common.updated }); qc.invalidateQueries({ queryKey: ['admin-users'] }); }, onError: (e: any) => notify({ color: 'red', message: e.message }) });
+  const { data, isLoading, error, refetch } = useQuery<{ items: AdminUser[]; total: number }>({ queryKey: ['admin-users', query], queryFn: () => api('/admin/manage/users', { query }), placeholderData: keepPreviousData });
+  const m = useMutation({ mutationFn: ({ id, body }: { id: string; body: { role?: string; status?: string } }) => api(`/admin/manage/users/${id}`, { method: 'PATCH', body }), onSuccess: () => { notify({ color: 'teal', message: t.common.updated }); qc.invalidateQueries({ queryKey: ['admin-users'] }); }, onError: (e: Error) => notify({ color: 'red', message: e.message }) });
   const isSuper = me?.role === 'super_admin';
   return (
     <div className="grid gap-4">

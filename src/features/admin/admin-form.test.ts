@@ -12,7 +12,7 @@ describe('dotted path helpers', () => {
     const orig = { x: { y: 1 } };
     const next = setPath(orig, 'x.y', 2);
     expect(orig.x.y).toBe(1);
-    expect(next.x.y).toBe(2);
+    expect((next.x as { y: number }).y).toBe(2);
   });
 });
 

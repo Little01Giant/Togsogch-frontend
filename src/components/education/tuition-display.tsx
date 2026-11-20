@@ -15,7 +15,7 @@ export function useUsdToMnt() {
 const money = (n: number, c: string) => `${fmtNumber(Math.round(n))} ${c === 'MNT' ? '₮' : c}`;
 
 /** Анхны валют + USD + MNT, хичээлийн жил, баталгаажсан/тооцоолсон төлөв. Ханш байхгүй бол MNT-ийг зохиохгүй. */
-export function TuitionDisplay({ tuition, compact, className }: { tuition: Tuition; compact?: boolean; className?: string }) {
+export function TuitionDisplay({ tuition, compact, className, clean }: { tuition: Tuition; compact?: boolean; className?: string; /** true: «Баталгаажаагүй» шошго ба ханшгүй «₮ —» мөрийг харуулахгүй */ clean?: boolean }) {
   const rate = useUsdToMnt().data?.usdToMnt ?? null;
   const cur = tuition.currency ?? 'USD';
   const fee = tuition.annualFee ?? null;
@@ -25,15 +25,15 @@ export function TuitionDisplay({ tuition, compact, className }: { tuition: Tuiti
   return (
     <div className={cn('space-y-1', className)}>
       <p className={cn('font-semibold', compact ? 'text-body-sm' : 'text-h4')}>{tuition.annualFeeMax != null && tuition.annualFeeMax > fee ? `${fmtNumber(Math.round(fee))} – ${money(tuition.annualFeeMax, cur)}` : money(fee, cur)} <span className="text-caption font-normal text-muted-foreground">{t.universities.perYear}</span></p>
-      {!compact && (
+      {!compact && (clean ? (cur !== 'USD' && usd != null) || mnt != null : true) && (
         <p className="text-body-sm text-muted-foreground">
           {cur !== 'USD' && usd != null && <>≈ {money(usd, 'USD')}</>}{cur !== 'USD' && usd != null && mnt != null && ' · '}
-          {cur !== 'MNT' && (mnt != null ? <>≈ {money(mnt, 'MNT')}</> : usd != null && <span title={t.p4.rateMissing}>₮ —</span>)}
+          {cur !== 'MNT' && (mnt != null ? <>≈ {money(mnt, 'MNT')}</> : usd != null && !clean && <span title={t.p4.rateMissing}>₮ —</span>)}
         </p>
       )}
       <div className="flex flex-wrap items-center gap-1.5">
         {tuition.academicYear && <Badge variant="outline">{tuition.academicYear}</Badge>}
-        {tuition.isEstimate ? <Badge variant="warning"><CircleAlert aria-hidden />{t.universities.estimate}</Badge> : tuition.verifiedAt ? <Badge variant="success"><CheckCircle2 aria-hidden />{t.source.verified}</Badge> : <Badge variant="muted">{t.source.unverified}</Badge>}
+        {tuition.isEstimate ? <Badge variant="warning"><CircleAlert aria-hidden />{t.universities.estimate}</Badge> : tuition.verifiedAt ? <Badge variant="success"><CheckCircle2 aria-hidden />{t.source.verified}</Badge> : !clean && <Badge variant="muted">{t.source.unverified}</Badge>}
       </div>
     </div>
   );
